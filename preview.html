@@ -40,15 +40,37 @@
 
         // Custom typewriter that preserves HTML and ruby elements
         function typewriterWithHTML(element, htmlContent, options = {}) {
-            console.log('🔤 typewriterWithHTML START', { 
-                element: element?.className, 
-                htmlLength: htmlContent?.length,
-                hasRuby: htmlContent?.includes('<ruby>'),
-                htmlPreview: htmlContent?.substring(0, 100)
-            });
-            
             const speed = options.speed || 10;
             const afterStep = options.afterStep || (() => {});
+            
+            // Pre-calculate final dimensions to prevent juddering
+            const isJapanese = element.classList.contains('japanese-text');
+            if (isJapanese) {
+                const measureDiv = document.createElement('div');
+                measureDiv.style.cssText = window.getComputedStyle(element).cssText;
+                measureDiv.style.position = 'absolute';
+                measureDiv.style.visibility = 'hidden';
+                measureDiv.style.opacity = '0';
+                measureDiv.style.pointerEvents = 'none';
+                measureDiv.innerHTML = htmlContent;
+                document.body.appendChild(measureDiv);
+                
+                // Force layout calculation
+                void measureDiv.offsetWidth;
+                
+                const finalWidth = measureDiv.offsetWidth;
+                const finalHeight = measureDiv.offsetHeight;
+                
+                // Set fixed dimensions to prevent layout shifts
+                element.style.width = finalWidth + 'px';
+                element.style.height = finalHeight + 'px';
+                element.style.minWidth = finalWidth + 'px';
+                element.style.minHeight = finalHeight + 'px';
+                element.style.willChange = 'contents';
+                element.style.contain = 'layout style paint';
+                
+                document.body.removeChild(measureDiv);
+            }
             
             // Create a temporary container to parse HTML
             const tempDiv = document.createElement('div');
@@ -69,7 +91,6 @@
                     }
                 } else if (node.nodeType === Node.ELEMENT_NODE) {
                     if (node.tagName === 'RUBY') {
-                        console.log('🔤 Found RUBY element:', node.outerHTML.substring(0, 100));
                         // Extract ruby base text and furigana separately
                         const rt = node.querySelector('rt');
                         const rtText = rt ? rt.textContent : '';
@@ -86,8 +107,6 @@
                                 baseText += child.textContent;
                             }
                         });
-                        
-                        console.log('🔤 Ruby baseText:', baseText, 'rtText:', rtText);
                         
                         // Push each base character with ruby metadata
                         for (let i = 0; i < baseText.length; i++) {
@@ -107,7 +126,6 @@
             }
             
             Array.from(tempDiv.childNodes).forEach(extractNodes);
-            console.log('🔤 Parsed nodes:', nodes.length, 'ruby-chars:', nodes.filter(n => n.type === 'ruby-char').length);
             
             let index = 0;
             let charCount = 0;
@@ -167,7 +185,6 @@
                         
                         // Show furigana only after last character
                         if (node.charIndex === node.totalChars - 1) {
-                            console.log('🔤 Showing furigana for ruby:', node.rtText);
                             rt.style.opacity = '1';
                             currentRuby = null; // Reset for next ruby
                         }
@@ -472,8 +489,6 @@
                 const container = document.querySelector('.horror-content.kids');
                 if (narrative && container) {
                     const htmlContent = narrative.dataset.narrative || narrative.innerHTML;
-                    console.log('🔤 Horror Kids - HTML Content:', htmlContent.substring(0, 200));
-                    console.log('🔤 Has Ruby:', htmlContent.includes('<ruby>'));
                     container.style.opacity = '1';
 
                     let charCount = 0;
@@ -487,8 +502,6 @@
                             }
                         }
                     });
-                } else {
-                    console.error('❌ Horror Kids - Narrative or container not found', { narrative, container });
                 }
             }, 500);
         }
@@ -732,6 +745,32 @@
                     if (isJapanese) {
                         // Ink brush effect for Japanese - preserve HTML (furigana) and animate ruby character-by-character
                         const originalHTML = narrative.innerHTML;
+                        
+                        // Pre-calculate final dimensions to prevent juddering
+                        const measureDiv = document.createElement('div');
+                        measureDiv.style.cssText = window.getComputedStyle(narrative).cssText;
+                        measureDiv.style.position = 'absolute';
+                        measureDiv.style.visibility = 'hidden';
+                        measureDiv.style.opacity = '0';
+                        measureDiv.style.pointerEvents = 'none';
+                        measureDiv.innerHTML = originalHTML;
+                        document.body.appendChild(measureDiv);
+                        
+                        // Get final dimensions
+                        const finalWidth = measureDiv.offsetWidth;
+                        const finalHeight = measureDiv.offsetHeight;
+                        
+                        // Set fixed dimensions on narrative to prevent layout shifts
+                        narrative.style.width = finalWidth + 'px';
+                        narrative.style.height = finalHeight + 'px';
+                        narrative.style.minWidth = finalWidth + 'px';
+                        narrative.style.minHeight = finalHeight + 'px';
+                        narrative.style.willChange = 'contents';
+                        narrative.style.contain = 'layout style paint';
+                        
+                        // Remove measure div
+                        document.body.removeChild(measureDiv);
+                        
                         narrative.innerHTML = '';
                         narrative.style.opacity = '1';
 
