@@ -37,3 +37,6 @@ desktop.ini
 *.temp
 .cache/
 
+
+# Generated images
+images/generated/
