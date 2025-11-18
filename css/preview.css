@@ -2909,15 +2909,15 @@ body {
 .fantasy-narrative.kids.japanese-text {
     writing-mode: vertical-rl !important;
     text-orientation: upright !important;
-    height: 50vh !important;
-    max-height: 50vh !important;
+    height: auto !important;
+    max-height: none !important;
     width: fit-content !important;
     max-width: none !important;
     min-width: 0 !important;
     overflow-x: visible;
     overflow-y: visible;
     line-height: 1.5em !important;
-    letter-spacing: 0.15em !important; /* 150% wider spacing between vertical lines */
+    letter-spacing: 0.4em !important; /* Much wider spacing between vertical lines */
     padding: 2rem;
     font-family: 'Noto Serif JP', 'Yu Mincho', serif !important;
     font-size: 1.1em !important;
@@ -2925,6 +2925,8 @@ body {
     word-break: keep-all;
     overflow-wrap: anywhere;
     display: inline-block !important;
+    will-change: contents;
+    contain: layout style paint;
 }
 
 /* Force ruby position for all Japanese vertical text */
