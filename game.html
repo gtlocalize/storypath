@@ -141,7 +141,14 @@
             normalized = normalized.replace(new RegExp(`(${jpChar})\\s+(${jpChar})`, 'g'), '$1$2');
 
             // Fix gaps around dashes/hyphens: remove spaces around them
+            // Handle various dash types
             normalized = normalized.replace(/\s*[-‐‑‒–—―]\s*/g, '—'); // Use em dash, no spaces
+            
+            // Fix 一 (kanji one) used as dash in vertical text - remove spaces around it
+            // Only when surrounded by other Japanese characters (not in actual numbers/words)
+            normalized = normalized.replace(/([一-龯ぁ-ゖ])\s+一\s+([一-龯ぁ-ゖ])/g, '$1—$2');
+            normalized = normalized.replace(/([一-龯ぁ-ゖ])\s+一([一-龯ぁ-ゖ])/g, '$1—$2');
+            normalized = normalized.replace(/([一-龯ぁ-ゖ])一\s+([一-龯ぁ-ゖ])/g, '$1—$2');
 
             // Fix gaps after commas/punctuation: remove space after Japanese punctuation
             normalized = normalized.replace(/([、。，．])\s+/g, '$1');
@@ -152,12 +159,10 @@
             // Remove accidental slashes between kana/kanji (す/る -> する)
             normalized = normalized.replace(new RegExp(`(${jpChar})\\/(${jpChar})`, 'g'), '$1$2');
 
-            // Add zero-width space after verbs/suru to prevent bad line breaks
-            // Match common verb endings that shouldn't break
-            normalized = normalized.replace(/([一-龯][すする])/g, (match) => {
-                // Don't break suru verbs - add non-breaking marker
-                return match.replace(/([すする])$/, '\u200B$1');
-            });
+            // Prevent bad line breaks in verbs - add word joiner after suru verbs
+            // Match common verb endings like する, 来る, etc.
+            normalized = normalized.replace(/([一-龯]+[すする])/g, '$1\u2060'); // Word joiner prevents breaks
+            normalized = normalized.replace(/([一-龯]+来る)/g, '$1\u2060');
 
             return normalized;
         }
