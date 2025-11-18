@@ -2917,7 +2917,7 @@ body {
     overflow-x: visible;
     overflow-y: visible;
     line-height: 1.5em !important;
-    letter-spacing: 0.4em !important; /* Much wider spacing between vertical lines */
+    letter-spacing: 0.6em !important; /* Much wider spacing between vertical lines */
     padding: 2rem;
     font-family: 'Noto Serif JP', 'Yu Mincho', serif !important;
     font-size: 1.1em !important;

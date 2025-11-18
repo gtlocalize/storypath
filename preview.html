@@ -66,8 +66,11 @@
                 element.style.height = finalHeight + 'px';
                 element.style.minWidth = finalWidth + 'px';
                 element.style.minHeight = finalHeight + 'px';
+                element.style.maxWidth = finalWidth + 'px';
+                element.style.maxHeight = finalHeight + 'px';
                 element.style.willChange = 'contents';
                 element.style.contain = 'layout style paint';
+                element.style.boxSizing = 'border-box';
                 
                 document.body.removeChild(measureDiv);
             }
@@ -765,8 +768,15 @@
                         narrative.style.height = finalHeight + 'px';
                         narrative.style.minWidth = finalWidth + 'px';
                         narrative.style.minHeight = finalHeight + 'px';
+                        narrative.style.maxWidth = finalWidth + 'px';
+                        narrative.style.maxHeight = finalHeight + 'px';
                         narrative.style.willChange = 'contents';
                         narrative.style.contain = 'layout style paint';
+                        narrative.style.boxSizing = 'border-box';
+                        
+                        // Also fix container dimensions to prevent juddering
+                        container.style.willChange = 'contents';
+                        container.style.contain = 'layout style paint';
                         
                         // Remove measure div
                         document.body.removeChild(measureDiv);
