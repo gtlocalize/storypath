@@ -1057,6 +1057,31 @@
                 const maturity = storyData.maturity_level || 'kids';
                 const title = parseFurigana(storyData.title);
 
+                // Helper: Extract atomic units (characters or ruby elements) from HTML
+                function extractAtomicUnits(htmlString) {
+                    const temp = document.createElement('div');
+                    temp.innerHTML = htmlString;
+                    const units = [];
+
+                    function walk(node) {
+                        if (node.nodeType === Node.TEXT_NODE) {
+                            // Text node - split into individual characters
+                            [...node.textContent].forEach(char => {
+                                units.push({ type: 'char', value: char });
+                            });
+                        } else if (node.nodeType === Node.ELEMENT_NODE && node.tagName === 'RUBY') {
+                            // Ruby element - treat as single atomic unit
+                            units.push({ type: 'ruby', element: node.cloneNode(true) });
+                        } else if (node.nodeType === Node.ELEMENT_NODE) {
+                            // Other elements - recurse into children
+                            node.childNodes.forEach(walk);
+                        }
+                    }
+
+                    temp.childNodes.forEach(walk);
+                    return units;
+                }
+
                 let animationHTML = '';
 
                 // FANTASY ADULT: Fire particles rising from bottom
@@ -1150,10 +1175,10 @@
 
                 // FANTASY KIDS FLAG ANIMATION
                 if (genre === 'fantasy' && maturity === 'kids') {
-                    // Split text into individual characters and animate stroke drawing
                     const flagText = document.getElementById('flagText');
                     if (flagText) {
-                        const text = flagText.textContent;
+                        // Extract atomic units from title
+                        const units = extractAtomicUnits(title);
 
                         // Create temporary canvas to measure text
                         const tempCanvas = document.createElement('canvas');
@@ -1162,18 +1187,28 @@
 
                         flagText.textContent = ''; // Clear original text
 
-                        // Create tspan for each character with proper spacing
-                        const chars = text.split('');
+                        // Create tspan for each unit with proper spacing
                         const charElements = [];
 
-                        // Position characters using tspan dx for relative positioning
-                        chars.forEach((char, index) => {
+                        // Position units using tspan dx for relative positioning
+                        units.forEach((unit, index) => {
                             const tspan = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
-                            tspan.textContent = char;
 
-                            // Measure actual character width
-                            const metrics = tempCtx.measureText(char);
-                            const charWidth = metrics.width || (char === ' ' ? 20 : 30);
+                            // For ruby elements in SVG, show base text (furigana won't render in SVG text)
+                            let displayText;
+                            if (unit.type === 'char') {
+                                displayText = unit.value;
+                            } else if (unit.type === 'ruby') {
+                                // Extract base text from ruby element
+                                displayText = unit.element.textContent.replace(/[\u3040-\u309F\u30A0-\u30FF]/g, ''); // Remove hiragana/katakana (furigana)
+                                if (!displayText) displayText = unit.element.textContent; // Fallback to full text
+                            }
+
+                            tspan.textContent = displayText;
+
+                            // Measure actual character/unit width
+                            const metrics = tempCtx.measureText(displayText);
+                            const charWidth = metrics.width || (displayText === ' ' ? 20 : 30);
 
                             // Set stroke-dasharray based on measured width
                             tspan.style.strokeDasharray = charWidth * 2;
@@ -1421,34 +1456,53 @@
                 // SCI-FI KIDS: GLaDOS-style resolving text effect
                 else if (genre === 'scifi' && maturity === 'kids') {
                     const resolveEl = document.getElementById('titleText');
-                    const targetText = resolveEl.getAttribute('data-text');
+                    const units = extractAtomicUnits(title);
                     const characters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'x', 'y', 'z', '#', '%', '&', '-', '+', '_', '?', '/', '\\', '='];
 
                     function randomChar() {
                         return characters[Math.floor(Math.random() * characters.length)];
                     }
 
-                    function resolveText(offset = 0) {
-                        if (offset > targetText.length) {
-                            resolveEl.textContent = targetText;
+                    function resolveText(unitIndex = 0) {
+                        if (unitIndex >= units.length) {
                             setTimeout(() => showCurtainReveal(overlay, genre, maturity, resolve), 1000);
                             return;
                         }
 
-                        const partialString = targetText.substring(0, offset);
                         let iterations = 10;
 
                         function randomize() {
                             if (iterations >= 0) {
-                                if (iterations === 0) {
-                                    resolveEl.textContent = partialString;
-                                } else {
-                                    resolveEl.textContent = partialString.substring(0, partialString.length - 1) + randomChar();
+                                // Rebuild display: show resolved units + current randomizing unit
+                                resolveEl.innerHTML = '';
+                                for (let i = 0; i < unitIndex; i++) {
+                                    const unit = units[i];
+                                    if (unit.type === 'char') {
+                                        resolveEl.appendChild(document.createTextNode(unit.value));
+                                    } else if (unit.type === 'ruby') {
+                                        resolveEl.appendChild(unit.element.cloneNode(true));
+                                    }
                                 }
+
+                                // Add current unit (resolved or randomizing)
+                                if (iterations === 0) {
+                                    const unit = units[unitIndex];
+                                    if (unit.type === 'char') {
+                                        resolveEl.appendChild(document.createTextNode(unit.value));
+                                    } else if (unit.type === 'ruby') {
+                                        resolveEl.appendChild(unit.element.cloneNode(true));
+                                    }
+                                } else {
+                                    // Show random character (unless it's a ruby element)
+                                    if (units[unitIndex].type === 'char') {
+                                        resolveEl.appendChild(document.createTextNode(randomChar()));
+                                    }
+                                }
+
                                 iterations--;
                                 setTimeout(randomize, 5);
                             } else {
-                                resolveText(offset + 1);
+                                resolveText(unitIndex + 1);
                             }
                         }
                         randomize();
@@ -1459,65 +1513,77 @@
                 // MYSTERY KIDS: Letter-by-letter reveal
                 else if (genre === 'mystery' && maturity === 'kids') {
                     const textEl = document.getElementById('titleText');
-                    const titleText = storyData.title;
-                    const letters = titleText.split('');
+                    const units = extractAtomicUnits(title);
+                    textEl.innerHTML = '';
 
-                    // Create letter spans
-                    textEl.innerHTML = letters.map(letter =>
-                        `<span class="letter">${letter === ' ' ? '&nbsp;' : letter}</span>`
-                    ).join('');
+                    // Create spans for each unit (character or ruby element)
+                    units.forEach((unit, index) => {
+                        const span = document.createElement('span');
+                        span.className = 'letter';
 
-                    // Animate letters with delay
-                    const letterSpans = textEl.querySelectorAll('.letter');
-                    letterSpans.forEach((span, index) => {
+                        if (unit.type === 'char') {
+                            span.textContent = unit.value === ' ' ? '\u00A0' : unit.value;
+                        } else if (unit.type === 'ruby') {
+                            span.appendChild(unit.element);
+                        }
+
                         span.style.animationDelay = `${index * 0.08}s`;
+                        textEl.appendChild(span);
                     });
 
-                    // Show curtain after all letters are revealed
-                    const totalDuration = letters.length * 80 + 800; // 80ms per letter + 800ms pause
+                    // Show curtain after all units are revealed
+                    const totalDuration = units.length * 80 + 800;
                     setTimeout(() => showCurtainReveal(overlay, genre, maturity, resolve), totalDuration);
                 }
                 // ADVENTURE KIDS: Bouncy letter pop-in
                 else if (genre === 'adventure' && maturity === 'kids') {
                     const bounceEl = document.getElementById('titleText');
-                    const titleText = storyData.title;
-                    const letters = titleText.split('');
+                    const units = extractAtomicUnits(title);
                     bounceEl.innerHTML = '';
 
-                    letters.forEach((letter, i) => {
+                    units.forEach((unit, i) => {
                         const span = document.createElement('span');
-                        span.textContent = letter;
                         span.style.animationDelay = `${i * 0.1}s`;
                         span.classList.add('bounce-letter');
-                        // Add extra margin for spaces
-                        if (letter === ' ') {
-                            span.style.width = '0.5em';
-                            span.style.display = 'inline-block';
+
+                        if (unit.type === 'char') {
+                            span.textContent = unit.value;
+                            if (unit.value === ' ') {
+                                span.style.width = '0.5em';
+                                span.style.display = 'inline-block';
+                            }
+                        } else if (unit.type === 'ruby') {
+                            span.appendChild(unit.element);
                         }
+
                         bounceEl.appendChild(span);
                     });
 
-                    setTimeout(() => showCurtainReveal(overlay, genre, maturity, resolve), 2000 + letters.length * 100);
+                    setTimeout(() => showCurtainReveal(overlay, genre, maturity, resolve), 2000 + units.length * 100);
                 }
                 // ADVENTURE ADULT: Cinematic sliding bars
                 else if (genre === 'adventure' && maturity === 'adult') {
                     const slideEl = document.getElementById('titleText');
-                    const titleText = storyData.title;
-                    const letters = titleText.split('');
+                    const units = extractAtomicUnits(title);
                     slideEl.innerHTML = '';
 
-                    const middle = Math.floor(letters.length / 2);
-                    letters.forEach((letter, i) => {
+                    const middle = Math.floor(units.length / 2);
+                    units.forEach((unit, i) => {
                         const span = document.createElement('span');
-                        span.textContent = letter;
                         const distance = Math.abs(i - middle);
                         span.style.animationDelay = `${distance * 0.05}s`;
                         span.classList.add('slide-letter');
-                        // Add extra margin for spaces
-                        if (letter === ' ') {
-                            span.style.width = '0.5em';
-                            span.style.display = 'inline-block';
+
+                        if (unit.type === 'char') {
+                            span.textContent = unit.value;
+                            if (unit.value === ' ') {
+                                span.style.width = '0.5em';
+                                span.style.display = 'inline-block';
+                            }
+                        } else if (unit.type === 'ruby') {
+                            span.appendChild(unit.element);
                         }
+
                         slideEl.appendChild(span);
                     });
 
