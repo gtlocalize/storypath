@@ -1,90 +1,126 @@
 class AudioManager {
     constructor() {
-        this.synth = window.speechSynthesis;
-        this.voices = [];
         this.enabled = false;
-        this.currentVoice = null;
         this.lang = 'en';
+        this.audioContext = null;
+        this.currentAudio = null;
         
         // Initialize Howler for SFX
         this.sounds = {
-            click: new Howl({
-                src: ['https://assets.codepen.io/21542/click.mp3'], // Placeholder
-                volume: 0.5
-            }),
-            hover: new Howl({
-                src: ['https://assets.codepen.io/21542/hover.mp3'], // Placeholder
-                volume: 0.2
-            }),
-            ambient: null // Will be set based on genre
+            // Use generated beeps for UI to ensure they work without external assets
+            click: null, 
+            hover: null,
+            ambient: null
         };
-
-        // Load voices
-        if (speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = () => this.loadVoices();
-        }
-        this.loadVoices();
     }
 
-    loadVoices() {
-        this.voices = this.synth.getVoices();
-        this.setVoiceForLang(this.lang);
+    initAudioContext() {
+        if (!this.audioContext) {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (this.audioContext.state === 'suspended') {
+            this.audioContext.resume();
+        }
+    }
+
+    // Generate a simple beep using Web Audio API (no external file needed)
+    playBeep(frequency = 440, duration = 0.1, type = 'sine', volume = 0.1) {
+        if (!this.enabled) return;
+        this.initAudioContext();
+
+        const osc = this.audioContext.createOscillator();
+        const gain = this.audioContext.createGain();
+
+        osc.type = type;
+        osc.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+        
+        gain.gain.setValueAtTime(volume, this.audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+
+        osc.connect(gain);
+        gain.connect(this.audioContext.destination);
+
+        osc.start();
+        osc.stop(this.audioContext.currentTime + duration);
     }
 
     setLanguage(lang) {
         this.lang = lang;
-        this.setVoiceForLang(lang);
-    }
-
-    setVoiceForLang(lang) {
-        // Try to find a good voice for the language
-        const langCode = lang === 'ja' ? 'ja-JP' : 'en-US';
-        
-        // Prefer Google voices or high quality ones
-        this.currentVoice = this.voices.find(v => v.lang === langCode && v.name.includes('Google')) 
-            || this.voices.find(v => v.lang === langCode)
-            || this.voices[0];
-            
-        console.log(`🗣️ Voice set to: ${this.currentVoice ? this.currentVoice.name : 'Default'}`);
     }
 
     toggle() {
         this.enabled = !this.enabled;
-        if (!this.enabled) {
+        if (this.enabled) {
+            this.initAudioContext();
+        } else {
             this.stop();
         }
         return this.enabled;
     }
 
-    speak(text) {
+    async speak(text) {
         if (!this.enabled || !text) return;
 
         // Cancel current speech
         this.stop();
 
-        const utterance = new SpeechSynthesisUtterance(text);
-        if (this.currentVoice) {
-            utterance.voice = this.currentVoice;
+        try {
+            // Use OpenAI TTS via our backend
+            const voice = this.lang === 'ja' ? 'nova' : 'alloy'; // 'nova' is good for Japanese
+            
+            const response = await fetch('/api/tts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text, voice })
+            });
+
+            if (!response.ok) throw new Error('TTS request failed');
+
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            
+            this.currentAudio = new Audio(url);
+            this.currentAudio.play();
+            
+            this.currentAudio.onended = () => {
+                URL.revokeObjectURL(url);
+                this.currentAudio = null;
+            };
+
+        } catch (error) {
+            console.error('TTS Error:', error);
+            // Fallback to Web Speech API if backend fails
+            this.speakFallback(text);
         }
-        
+    }
+
+    speakFallback(text) {
+        const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = this.lang === 'ja' ? 'ja-JP' : 'en-US';
-        utterance.rate = 1.0;
-        utterance.pitch = 1.0;
-        
-        this.synth.speak(utterance);
+        window.speechSynthesis.speak(utterance);
     }
 
     stop() {
-        this.synth.cancel();
+        if (this.currentAudio) {
+            this.currentAudio.pause();
+            this.currentAudio = null;
+        }
+        window.speechSynthesis.cancel();
     }
 
     playSfx(name) {
-        if (this.sounds[name]) {
-            this.sounds[name].play();
+        if (!this.enabled) return;
+
+        if (name === 'click') {
+            this.playBeep(600, 0.05, 'sine', 0.1);
+        } else if (name === 'hover') {
+            this.playBeep(400, 0.03, 'triangle', 0.05);
         }
     }
     
     playAmbient(genre) {
+        if (!this.enabled) return;
+
         // Stop previous ambient
         if (this.sounds.ambient) {
             this.sounds.ambient.fade(0.5, 0, 1000);
@@ -92,7 +128,6 @@ class AudioManager {
         }
         
         // Map genre to ambient sound (placeholders for now)
-        // In a real app, these would be local files
         const ambientUrls = {
             fantasy: 'https://assets.codepen.io/21542/fantasy_ambience.mp3',
             scifi: 'https://assets.codepen.io/21542/scifi_ambience.mp3',
@@ -104,7 +139,7 @@ class AudioManager {
         if (ambientUrls[genre]) {
             this.sounds.ambient = new Howl({
                 src: [ambientUrls[genre]],
-                html5: true, // Use HTML5 Audio for long files
+                html5: true,
                 loop: true,
                 volume: 0.3
             });

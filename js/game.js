@@ -159,7 +159,18 @@ function updateStoryView() {
     // Speak narrative if enabled
     if (audio && audio.enabled) {
         // Strip HTML tags for speech
-        const textToSpeak = currentScene.narrative_text.replace(/<[^>]*>/g, '');
+        let textToSpeak = currentScene.narrative_text;
+        
+        // Remove ruby tags AND their content (furigana) to avoid double reading
+        // <ruby>漢字<rt>かんじ</rt></ruby> -> 漢字
+        textToSpeak = textToSpeak.replace(/<rt>.*?<\/rt>/g, '');
+        
+        // Also remove bracket notation furigana: 漢字《かんじ》 -> 漢字
+        textToSpeak = textToSpeak.replace(/《.*?》/g, '');
+        
+        // Finally strip any remaining tags
+        textToSpeak = textToSpeak.replace(/<[^>]*>/g, '');
+        
         audio.speak(textToSpeak);
     }
 

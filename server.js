@@ -4,6 +4,9 @@ const express = require('express');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcrypt');
+const fs = require('fs');
+const fsPromises = require('fs').promises;
+const crypto = require('crypto');
 
 const StoryDatabase = require('./database/StoryDatabase');
 const StoryEngine = require('./ai/StoryEngine');
@@ -83,13 +86,12 @@ async function processFurigana(narrative, language) {
 // Get all stories (for splash page)
 app.get('/api/stories', async (req, res) => {
     try {
-        const fs = require('fs').promises;
         const storiesDir = path.join(__dirname, 'stories');
 
         // Ensure directory exists
-        await fs.mkdir(storiesDir, { recursive: true });
+        await fsPromises.mkdir(storiesDir, { recursive: true });
 
-        const files = await fs.readdir(storiesDir);
+        const files = await fsPromises.readdir(storiesDir);
         const dbFiles = files.filter(f => f.endsWith('.db'));
 
         const allStories = [];
@@ -726,6 +728,59 @@ app.get('/api/story/:id/complete', async (req, res) => {
     } catch (error) {
         console.error('Error fetching complete story:', error);
         res.status(500).json({ error: 'Failed to fetch complete story' });
+    }
+});
+
+// Generate TTS audio
+app.post('/api/tts', async (req, res) => {
+    try {
+        const { text, voice } = req.body;
+        
+        if (!text) {
+            return res.status(400).json({ error: 'Text is required' });
+        }
+
+        // Create cache key from text and voice
+        const cacheKey = crypto.createHash('md5').update(`${text}-${voice}`).digest('hex');
+        const cachePath = path.join(__dirname, 'audio', 'cache', `${cacheKey}.mp3`);
+
+        // Check cache first
+        try {
+            await fsPromises.access(cachePath);
+            const cachedAudio = await fsPromises.readFile(cachePath);
+            res.set('Content-Type', 'audio/mpeg');
+            res.set('X-Cache', 'HIT');
+            return res.send(cachedAudio);
+        } catch (e) {
+            // Cache miss, continue to generate
+        }
+
+        const OpenAI = require('openai');
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+        const mp3 = await openai.audio.speech.create({
+            model: "tts-1",
+            voice: voice || "alloy",
+            input: text,
+        });
+
+        const buffer = Buffer.from(await mp3.arrayBuffer());
+        
+        // Save to cache
+        try {
+            await fsPromises.mkdir(path.dirname(cachePath), { recursive: true });
+            await fsPromises.writeFile(cachePath, buffer);
+        } catch (e) {
+            console.error('Failed to cache audio:', e);
+        }
+        
+        res.set('Content-Type', 'audio/mpeg');
+        res.set('X-Cache', 'MISS');
+        res.send(buffer);
+
+    } catch (error) {
+        console.error('TTS generation failed:', error);
+        res.status(500).json({ error: 'TTS generation failed' });
     }
 });
 
