@@ -55,21 +55,16 @@ class EmbeddingHelper {
         console.log(`📊 Added embedding for story: ${title}`);
     }
 
-    async checkSimilarity(genre, maturityLevel, proposedConcept, similarityThreshold = 0.8) {
+    async checkSimilarity(genre, maturityLevel, proposedConcept, similarityThreshold = 0.7) {
         if (!this.collection) await this.initialize();
 
         const embedding = await this.getEmbedding(proposedConcept);
 
-        // Query for similar stories in same genre/maturity
+        // Query for similar stories ACROSS ALL genres/maturity (check everything!)
         const results = await this.collection.query({
             queryEmbeddings: [embedding],
-            nResults: 5,
-            where: {
-                $and: [
-                    { genre: { $eq: genre } },
-                    { maturity_level: { $eq: maturityLevel } }
-                ]
-            }
+            nResults: 10  // Check more stories
+            // NO where clause - check all stories regardless of genre/maturity
         });
 
         if (results.distances && results.distances[0]) {
