@@ -51,7 +51,7 @@ class AudioManager {
             // Use OpenAI TTS via our backend
             const voice = this.lang === 'ja' ? 'nova' : 'alloy'; // 'nova' is good for Japanese
             
-            const response = await fetch('/api/tts', {
+            const response = await fetch('/storypath-api/tts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ text, voice })
