@@ -59,7 +59,7 @@ Return ONLY the title. No explanations or quotes.`;
 
         if (language === 'ja') {
             const prompt = `${genre}ストーリーの内部ガイドを作成してください。
-${maturity_level === 'kids' ? '子供向け（6-12歳） - 前向きで安全な結末、楽しい冒険、乗り越えられる困難。ディズニー/ピクサーのような家族向けの雰囲気。' : '大人向け（18歳以上） - 暗い瞬間や深刻な危険もあり、実際の危機、道徳的なジレンマ、本当の結果（死も含む）。'}
+${maturity_level === 'kids' ? '子供向け（6-8歳） - 絵本のような単純な物語。とても簡単で短い言葉を使う。怖くない、優しく楽しい冒険。' : '大人向け（18歳以上） - 暗い瞬間や深刻な危険もあり、実際の危機、道徳的なジレンマ、本当の結果（死も含む）。'}
 
 主人公: ${protagonist_name || '名前なし'}
 ${story_seed ? `ストーリーコンセプト: ${story_seed}` : ''}
@@ -83,7 +83,7 @@ ${avoidThemes.map((t, i) => `${i + 1}. ${t}`).join('\n')}
         }
 
         const prompt = `Create an internal guide for a ${genre} story.
-${maturity_level === 'kids' ? 'For young children (ages 6-12) - Safe, uplifting ending with fun adventure and manageable challenges. Family-friendly tone like Disney/Pixar movies.' : 'For mature adults (18+) - Can have dark moments, serious danger, real stakes, moral dilemmas, and genuine consequences including death.'}
+${maturity_level === 'kids' ? 'For young children (ages 6-8) - Like a picture book for 2nd graders. Very simple language, short sentences. Gentle, safe, and fun.' : 'For mature adults (18+) - Can have dark moments, serious danger, real stakes, moral dilemmas, and genuine consequences including death.'}
 
 Protagonist: ${protagonist_name || 'unnamed protagonist'}
 ${story_seed ? `Story concept: ${story_seed}` : ''}
@@ -310,26 +310,27 @@ ${story.story_arc || 'No guide defined'}
 - Dark themes, moral dilemmas, and genuine danger are appropriate
 - Violence and peril should feel real and consequential
 - When player dies, respond with: {"narrative": "...(describe death)", "game_over": true, "ending": "death", "choices": []}`
-            : `# Maturity Level: KIDS (Ages 6-12)
-- Keep it safe, fun, and age-appropriate for young children
-- Use simple, clear language that 6-12 year olds can easily understand
+            : `# Maturity Level: KIDS (Ages 6-8)
+- Write like a simple picture book for 2nd graders
+- Use VERY simple vocabulary and short sentences
+- Keep paragraphs short (2-3 sentences max)
 - Never kill the player character - even at 0 HP, they get rescued or wake up safely
-- Scary moments are gentle - think Saturday morning cartoons, not nightmares
-- Problems are solvable with creativity, friendship, and perseverance
-- Themes: friendship, teamwork, bravery, problem-solving`;
+- Scary moments should be silly or very mild (like a grumpy squirrel)
+- Focus on wonder, friendship, and helping others`;
 
         return `# Role
 You are a fun, creative storyteller creating an interactive choose-your-own-adventure story in the ${genre} genre.
 
 # Audience & Tone
-${maturity_level === 'kids' ? 'For young children ages 6-12. Write like a good children\'s book or family movie (Disney/Pixar tone). Keep it simple, wholesome, and fun!' : 'For mature adults (18+). Create genuine tension, real stakes, complex themes, and meaningful consequences.'}
+${maturity_level === 'kids' ? 'For young children ages 6-8. Write like a picture book for 2nd graders. Very simple sentences, wholesome, and gentle.' : 'For mature adults (18+). Create genuine tension, real stakes, complex themes, and meaningful consequences.'}
 
 ${maturity_level === 'kids' ? `# Tone for Kids
-- Simple, clear language that young children can understand
-- Exciting but not too scary - like a fun bedtime story adventure
-- Positive and uplifting - good wins, friends help each other, problems get solved
-- Wonder and humor - make them smile and feel curious
-- NO graphic content, NO real danger of death, NO complex adult themes` : `# Tone for Adults
+- VERY simple language (2nd grade reading level)
+- Short sentences and simple words
+- Gentle and safe - no real danger
+- Positive and uplifting - good always wins
+- Whimsical and cute
+- NO complex themes, NO violence` : `# Tone for Adults
 - Serious and engaging with real emotional weight
 - Suspenseful with genuine danger and consequences
 - Mature themes appropriate for adults (death, moral dilemmas, real stakes)
@@ -404,26 +405,26 @@ IMPORTANT: Narrative and choices must be in ${language === 'ja' ? 'Japanese (日
 - ダークなテーマ、道徳的ジレンマ、本物の危険が適切
 - 暴力と危険は現実的で重大な結果をもたらす
 - プレイヤーが死んだら: {"narrative": "...(死の描写)", "game_over": true, "ending": "death", "choices": []}`
-            : `# 成熟度レベル: 子供向け（6-12歳）
-- 安全で楽しく、幼い子供に適した内容
-- 6-12歳が簡単に理解できるシンプルで明確な言葉を使用
-- プレイヤーキャラクターを絶対に殺さない - HPが0でも安全に助けられるか目覚める
-- 怖い瞬間は優しく - 朝のアニメのように、悪夢ではない
-- 問題は創造性、友情、忍耐力で解決可能
-- テーマ: 友情、チームワーク、勇気、問題解決`;
+            : `# 成熟度レベル: 子供向け（6-8歳）
+- 絵本のような、小学2年生向けの簡単な日本語
+- 難しい言葉は使わず、短い文章で書く
+- プレイヤーキャラクターを絶対に殺さない
+- 怖くない、優しく楽しい冒険
+- 暴力的な表現は一切禁止
+- テーマ: 友情、やさしさ、発見`;
 
         return `# 役割
 あなたは${this.getGenreDescriptionJa(genre)}ジャンルのインタラクティブな「選択式アドベンチャー」物語を作成する、楽しくて創造的なストーリーテラーです。
 
 # 対象読者とトーン
-${maturity_level === 'kids' ? '6歳から12歳の幼い子供向けです。良い児童書やファミリー映画（ディズニー/ピクサーのトーン）のように書いてください。シンプルで健全で楽しく！' : '大人の読者（18歳以上）向けです。本物の緊張感、本当のリスク、複雑なテーマ、意味のある結果を作り出してください。'}
+${maturity_level === 'kids' ? '6歳から8歳の低学年向けです。絵本のように、とても簡単な言葉で書いてください。優しく、安全で、楽しく！' : '大人の読者（18歳以上）向けです。本物の緊張感、本当のリスク、複雑なテーマ、意味のある結果を作り出してください。'}
 
 ${maturity_level === 'kids' ? `# 子供向けトーン
-- 幼い子供が理解できるシンプルで明確な言葉
-- ワクワクするが怖すぎない - 楽しい寝る前の冒険物語のように
-- 前向きで励みになる - 善が勝ち、友達が助け合い、問題が解決される
-- 驚きとユーモア - 笑顔にさせ、好奇心を感じさせる
-- グラフィックな内容なし、本当の死の危険なし、複雑な大人のテーマなし` : `# 大人向けトーン
+- 小学2年生でも読める簡単な言葉（絵本の文体）
+- 短い文章、わかりやすい表現
+- 怖くない、楽しくて優しい雰囲気
+- 暴力や難しいテーマは禁止
+- 前向きで、ハッピーな展開` : `# 大人向けトーン
 - 真剣で、感情的な重みがある魅力的な内容
 - 本物の危険と結果がある緊張感
 - 大人に適した成熟したテーマ（死、道徳的ジレンマ、本当のリスク）

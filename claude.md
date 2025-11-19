@@ -1,269 +1,114 @@
-# StoryPath - Theme System Plan
+# Claude Code Reference
 
-## Overview
-StoryPath is an AI-powered interactive fiction game that generates personalized stories with illustrations. The theme system creates unique visual experiences based on **genre** and **maturity level** (kids vs adult).
+## Git Workflow (IMPORTANT!)
 
-## Preview Themes (Kids vs Adult)
+**ONLY work in `/opt/vodbase/storypath/` - it's the single source of truth.**
 
-### Kids Versions - Saturday Morning Cartoons
-**Design Philosophy**: Bright, bouncy, playful, safe, fun - think Cartoon Network/Disney Jr.
+```bash
+# Make all edits in backend directory
+cd /opt/vodbase/storypath
 
-- **Horror**: Peppa Pig spooky style
-  - Friendly ghosts, purple/orange palette, silly sounds
-  - Bouncing animations, rounded fonts (Chewy)
-  - Floating particle effects (stars, ghosts)
-  - Status: ✅ COMPLETE
+# Edit any files (backend OR frontend)
+vim server.js
+vim js/game.js
+vim css/main.css
 
-- **Sci-Fi**: Cartoon aliens
-  - Bright neon, bouncy UFOs
-  - Retro-futuristic "Jetsons" vibe
-  - Bleeps and bloops
-  - Status: ⏳ PENDING
-
-- **Mystery**: Scooby-Doo notebook
-  - Magnifying glass animations
-  - Comic book style
-  - "Zoinks!" energy
-  - Status: ⏳ PENDING
-
-- **Fantasy**: Disney-style sparkles
-  - Rainbow scrolls, friendly dragons
-  - Magical twinkling
-  - Storybook aesthetic
-  - Status: ⏳ PENDING
-
-- **Adventure**: Treasure maps
-  - "X marks the spot" animations
-  - Playful compass spinning
-  - Pirate/explorer vibes
-  - Status: ⏳ PENDING
-
-### Adult Versions - Gritty and Cinematic
-**Design Philosophy**: Sophisticated, atmospheric, immersive - think prestige TV/cinema
-
-- **Horror**: Silent Hill fog
-  - Blood drips, glitch effects
-  - VHS grain, CRT scanlines
-  - Desaturated with red accents
-  - Status: ✅ COMPLETE
-
-- **Sci-Fi**: Blade Runner terminals
-  - Matrix code rain
-  - Cyberpunk neon
-  - Terminal/hacker aesthetic
-  - Status: ⏳ PENDING
-
-- **Mystery**: True Detective noir
-  - Coffee stains, cigarette burns
-  - Film grain, vintage photos
-  - Dark amber lighting
-  - Status: ⏳ PENDING
-
-- **Fantasy**: Game of Thrones parchment
-  - Fire effects, medieval aesthetics
-  - Wax seals, worn leather
-  - Epic orchestral feel
-  - Status: ⏳ PENDING
-
-- **Adventure**: Indiana Jones
-  - Worn leather, dust particles
-  - Sepia tones, treasure maps
-  - Cinematic adventure
-  - Status: ⏳ PENDING
-
-## Game Themes (Persistent from Preview)
-
-Each genre+maturity combo gets:
-- **Custom color schemes** - Match preview aesthetic
-- **Unique animations** - Using anime.js for transitions
-- **Different UI elements** - Themed buttons, borders, panels
-- **Genre-specific sound effects** - Optional ambient audio (Howler.js)
-- **Maturity-appropriate narrative panels** - Different fonts, decorations
-
-Status: ⏳ PENDING (all 10 combinations)
-
-## Animation Libraries
-
-### Imported Libraries (~66KB total)
-
-1. **tsParticles** (~35KB) - Particle effects
-   - Fog, sparkles, Matrix rain, fireflies, dust
-   - Kids: Bouncy stars, friendly ghosts
-   - Adult: Static, blood drips, smoke
-
-2. **TypeIt** (~5KB) - Typewriter effects
-   - Narrative text typing
-   - Terminal-style reveals
-
-3. **Splitting.js** (~1.5KB) - Character-by-character animations
-   - Works with anime.js
-   - Text reveals, glitch effects
-
-4. **Howler.js** (~7KB) - Audio playback
-   - Ambient sounds
-   - UI feedback sounds
-   - Genre-specific music
-
-5. **Granim.js** (<17KB) - Animated gradients
-   - Background transitions
-   - Color morphing effects
-
-6. **anime.js** (already imported) - Core animations
-   - UI transitions
-   - Button effects
-   - Scene transitions
-
-## Custom Story Seed Detection
-
-For custom prompts that don't fit standard genres:
-
-### Detection Strategy
-1. **Analyze user's custom text** with Claude AI
-2. **Detect keywords/themes**:
-   - "space pirates" → sci-fi
-   - "haunted mansion" → horror
-   - "medieval knight" → fantasy
-   - "treasure hunt" → adventure
-   - "detective case" → mystery
-3. **Fall back to user selection** if unclear
-4. **Infer maturity** from language/themes or default to kids
-
-Status: ⏳ PENDING
-
-## Technical Implementation
-
-### File Structure
-```
-/var/www/html/storypath/
-├── css/
-│   ├── main.css (global variables, base styles)
-│   ├── preview.css (all 10 preview themes)
-│   └── game.css (all 10 game themes)
-├── preview.html (preview page with theme detection)
-├── game.html (game page with theme persistence)
-└── wizard.html (story creation with seed detection)
-
-/opt/vodbase/storypath/
-├── ai/
-│   ├── StoryEngine.js (narrative generation)
-│   └── ImageGenerator.js (FLUX 1.1 Pro via Replicate)
-└── server.js (API endpoints)
+# Commit and push (auto-syncs frontend files to /var/www/html/storypath/)
+git add -A
+git commit -m "Your message"
+git push origin master
 ```
 
-### CSS Architecture
-- **Option 2 Chosen**: Theme classes in existing CSS files
-- Genre + maturity classes: `.preview-horror.kids`, `.preview-horror.adult`
-- JavaScript applies classes based on `storyData.genre` and `storyData.maturity_level`
-- Keeps everything centralized but CSS files are large
+**DO NOT edit files in `/var/www/html/storypath/` - they are auto-synced and will be overwritten!**
 
-### Theme Application Flow
-1. **Story Creation** (wizard.html):
-   - User selects genre + maturity OR provides custom seed
-   - Custom seeds analyzed by Claude for genre/maturity detection
-   - Story created with metadata
+The post-commit hook automatically copies frontend files (HTML/CSS/JS/images) to the web directory.
 
-2. **Preview Page** (preview.html):
-   - Loads story data from API
-   - Applies genre+maturity CSS classes
-   - Initializes theme-specific animations (particles, typewriter)
-   - Shows themed "Start Story" button
+## Cache Busting
 
-3. **Title Reveal**:
-   - Animated transition between preview and game
-   - Genre+maturity specific animation (e.g., bouncing ghost vs blood drip)
+When making changes to CSS/JS files that aren't showing up in the browser:
 
-4. **Game Page** (game.html):
-   - Persists theme from preview
-   - Applies game-specific theme styles
-   - Maintains visual consistency
+```bash
+# Run the cache bust script
+cd /var/www/html/storypath
+./bump-version.sh
 
-## Progress Tracker
+# Restart nginx
+sudo systemctl restart nginx
 
-### Completed ✅
-- [x] Import all animation libraries
-- [x] Kids Horror preview theme (Peppa Pig Halloween)
-- [x] Adult Horror preview theme (Silent Hill glitch)
-- [x] Kids Horror title reveal (bouncing ghost)
-- [x] Adult Horror title reveal (blood drip)
-- [x] Custom scrollbar styling (purple for kids, red for adult)
-- [x] Typewriter effects with auto-scroll
-- [x] Particle systems (friendly ghosts for kids, fog for adult)
+# Commit and push
+git add -A
+git commit -m "Bump version for cache bust"
+git push
+```
 
-### In Progress 🔄
-- [ ] Testing horror preview themes (scrollbar, animations)
+The `bump-version.sh` script:
+- Automatically increments version numbers across all HTML files
+- Updates `?v=XX` parameters on CSS and JS file references
+- Covers: index.html, wizard.html, preview.html, game.html
 
-### Pending ⏳
-- [ ] Build 8 remaining preview themes (Sci-Fi, Mystery, Fantasy, Adventure × kids/adult)
-- [ ] Create 10 game page themes with animations
-- [ ] Update game.html to apply genre+maturity theme styling
-- [ ] Add custom story seed theme detection to wizard
-- [ ] Optional: Add Howler.js sound effects per theme
+## Project Structure
 
-## Design Principles
+- `index.html` - Home page
+- `wizard.html` - Story creation wizard
+- `preview.html` - Story preview with title animations
+- `game.html` - Main game/story viewer with SSE streaming
+- `css/` - Stylesheets
+  - `main.css` - Global styles
+  - `game.css` - Game page specific styles
+- `js/` - JavaScript files
+  - `i18n.js` - Internationalization
 
-### Kids Themes
-- **Colors**: Bright, saturated, rainbow palettes
-- **Fonts**: Rounded, playful (Chewy, Comic Sans vibes)
-- **Animations**: Bouncy, elastic, overshoots
-- **Particles**: Stars, hearts, friendly creatures
-- **Sounds**: Silly, upbeat, cartoonish
-- **Tone**: Safe, fun, "wow cool!"
+## Japanese Language Support
 
-### Adult Themes
-- **Colors**: Desaturated, atmospheric, accent pops
-- **Fonts**: Cinematic, gritty (Special Elite, serif)
-- **Animations**: Smooth, subtle, cinematic
-- **Particles**: Fog, dust, atmospheric effects
-- **Sounds**: Ambient, immersive, realistic
-- **Tone**: Sophisticated, moody, immersive
+### Furigana Handling
 
-## Known Issues & Fixes
+The `parseFurigana()` function in game.html handles two formats:
+1. **Legacy format**: `漢字《かんじ》` → converts to HTML ruby tags
+2. **HTML format**: `<ruby>漢字<rt>かんじ</rt></ruby>` → uses directly
 
-### Fixed Issues
-1. ✅ Image cropping - Changed `object-fit: cover` to `contain`
-2. ✅ Preview button unclickable - Added `pointer-events: none` to overlays
-3. ✅ Furigana on katakana - Strip markers from kana characters
-4. ✅ Typewriter too slow - Reduced speed from 30ms to 10ms
-5. ✅ Scrollbar bouncing - Scroll every 5 chars with `behavior: 'auto'`
-6. ✅ Kids horror showing adult title reveal - Added maturity detection
+If text contains HTML ruby tags, the function strips `《》` brackets to prevent double furigana.
 
-### Active Considerations
-- FLUX 1.1 Pro image generation confirmed active via Replicate
-- Cache busting critical for CSS/JS updates (currently v=25)
-- Furigana parsing happens server-side for Japanese stories
-- Title generation async (polls every 1s for 30s)
+### Typography Normalization
 
-## API Integration
+`normalizeJapaneseTypography()` in game.html:
+- Removes stray spaces between Japanese characters
+- Replaces ASCII hyphens with vertical dash `︱` when surrounded by Japanese
+- Removes accidental slashes (す/る → する)
 
-### Image Generation
-- **Service**: Replicate
-- **Model**: FLUX 1.1 Pro (black-forest-labs/flux-1.1-pro)
-- **Format**: 16:9 PNG
-- **Speed**: 3-5 seconds
-- **Fallback**: Placeholder until generated
+### Vertical Text CSS
 
-### Story Generation
-- **Service**: Anthropic Claude
-- **Model**: Claude 3.5 Sonnet
-- **Features**:
-  - Story arc planning
-  - Scene generation with choices
-  - Furigana for Japanese (漢字《かんじ》 format)
-  - State management (HP, inventory, relationships)
+For Japanese vertical text (`.ja-vertical` class):
+- Uses `writing-mode: vertical-rl`
+- `text-orientation: upright`
+- `line-break: strict` - proper Japanese line breaking
+- `word-break: keep-all` - prevents splitting words
+- `overflow-wrap: normal` - no forced wrapping
 
-## Future Enhancements
+Applied to:
+- `.story-view.ja-vertical .narrative-panel`
+- `.story-view.ja-vertical .narrative-text`
+- `.story-view.ja-vertical .choice-button`
 
-### Potential Additions
-- [ ] More genres (Romance, Historical, Superhero)
-- [ ] Teenager maturity level (between kids and adult)
-- [ ] User-uploaded background images
-- [ ] Custom color scheme picker
-- [ ] Achievement system with themed badges
-- [ ] Story sharing with preserved themes
-- [ ] Mobile-optimized themes
-- [ ] Accessibility mode (reduced animations)
+## Common Issues
 
----
+### Browser Not Showing Changes
+1. Run `./bump-version.sh`
+2. Restart nginx: `sudo systemctl restart nginx`
+3. Hard refresh in browser: Ctrl+Shift+R (Windows/Linux) or Cmd+Shift+R (Mac)
 
-**Last Updated**: 2025-11-15
-**Status**: Horror themes complete, 8 themes pending, game page theming pending
+### Double Furigana
+Make sure `parseFurigana()` is called on all text:
+- Choice buttons (line ~270 in game.html)
+- Narrative formatting (line ~247 in game.html)
+- SSE streaming paragraphs (line ~335 in game.html)
+
+### Image Box Collapsing
+Scene-frame uses `width: fit-content` for Japanese to wrap tightly around images.
+Has `min-width: 400px` to prevent collapse during image load.
+
+### Skeleton Loading Not Showing
+Japanese vertical mode uses vertical skeleton bars:
+- Width: 60px
+- Height: 70vh (max 800px)
+- Vertical shimmer animation
+- CSS in game.css around line ~994
