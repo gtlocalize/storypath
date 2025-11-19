@@ -184,7 +184,7 @@ IMPORTANT: This is NOT a timeline. Don't specify scene numbers. The story unfold
                 // Check for end of narrative field (un-escaped quote)
                 // We look for a quote that is NOT preceded by a backslash
                 const endMatch = buffer.match(/(?<!\\)"/);
-                
+
                 let processableText = buffer;
                 if (endMatch) {
                     processableText = buffer.substring(0, endMatch.index);
@@ -194,28 +194,28 @@ IMPORTANT: This is NOT a timeline. Don't specify scene numbers. The story unfold
 
                 // 3. Scan for sentences in processableText
                 // We will consume text from the start of 'buffer' (which is 'processableText' + remainder)
-                
+
                 const delimiters = /[.!?。](?:['"」』])?(?=\s|\\n|$)/g;
                 let match;
                 let lastSplitIndex = 0;
-                
+
                 // Search ONLY within the valid narrative range
                 const searchLimit = isNarrativeComplete ? processableText.length : buffer.length;
                 const searchRegion = buffer.substring(0, searchLimit);
-                
+
                 while ((match = delimiters.exec(searchRegion)) !== null) {
                     const relativeSplitPoint = match.index + match[0].length;
-                    
+
                     // Extract and send the sentence
                     const chunk = searchRegion.substring(lastSplitIndex, relativeSplitPoint);
-                    
+
                     if (chunk.trim()) {
                         const cleaned = chunk
                             .replace(/\\n/g, '\n')
                             .replace(/\\"/g, '"')
                             .replace(/\\\\/g, '\\')
                             .trim();
-                        
+
                         if (cleaned) {
                             const isParaBreak = chunk.includes('\\n\\n');
                             // console.log(`📤 Sent chunk: ${cleaned.substring(0, 20)}...`);
@@ -226,15 +226,15 @@ IMPORTANT: This is NOT a timeline. Don't specify scene numbers. The story unfold
                             }
                         }
                     }
-                    
+
                     lastSplitIndex = relativeSplitPoint;
                 }
-                
+
                 // 4. Remove processed text from buffer
                 if (lastSplitIndex > 0) {
                     buffer = buffer.substring(lastSplitIndex);
                 }
-                
+
                 // 5. If narrative is complete, send any remaining text
                 if (isNarrativeComplete && buffer.length > 0) {
                     // We need to find where the narrative ENDS in the CURRENT buffer.
@@ -256,7 +256,7 @@ IMPORTANT: This is NOT a timeline. Don't specify scene numbers. The story unfold
                             }
                         }
                         // Clear buffer to stop processing
-                        buffer = ''; 
+                        buffer = '';
                     }
                 }
             }
@@ -801,11 +801,11 @@ Check the story arc's "Intended ending" - when player choices have brought them 
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 180000);
 
-            const response = await fetch(this.anthropic.baseURL + '/messages', {
+            const response = await fetch(this.apiUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-api-key': this.anthropic.apiKey,
+                    'x-api-key': this.apiKey,
                     'anthropic-version': '2023-06-01'
                 },
                 body: JSON.stringify({
@@ -848,8 +848,10 @@ Check the story arc's "Intended ending" - when player choices have brought them 
                             if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
                                 fullText += parsed.delta.text;
                                 if (onChunk) {
-                                    // console.log(`🔤 Sending chunk to callback: ${parsed.delta.text.length} chars`);
+                                    console.log(`🔤 Sending chunk to callback: ${parsed.delta.text.length} chars`);
                                     onChunk(parsed.delta.text);
+                                } else {
+                                    console.log(`⚠️ No onChunk callback provided`);
                                 }
                             }
 
@@ -874,6 +876,7 @@ Check the story arc's "Intended ending" - when player choices have brought them 
 
             return fullText;
         } catch (error) {
+            clearTimeout(timeout);
             const duration = ((Date.now() - startTime) / 1000).toFixed(2);
             console.log(`❌ Claude API failed after ${duration}s:`, error.message);
             if (error.name === 'AbortError') {
