@@ -448,12 +448,12 @@ async function handleChoice(req, res) {
             importantEvents,
             inventory,
             relationships
-        }, selectedChoice, (paragraph) => {
-            // Callback fires when each paragraph should be sent
-            // Strip ruby tags from narrative too
-            let cleanParagraph = paragraph.replace(/<ruby>([^<]+)<rt>[^<]*<\/rt><\/ruby>/g, '$1');
-            cleanParagraph = cleanParagraph.replace(/<ruby><ruby>([^<]+)<rt>[^<]*<\/rt><\/ruby><rt>[^<]*<\/rt><\/ruby>/g, '$1');
-            res.write(`data: ${JSON.stringify({ type: 'paragraph', text: cleanParagraph })}\n\n`);
+        }, selectedChoice, (text, isParagraphBreak) => {
+            // Callback fires when a chunk is ready
+            // Strip ruby tags from text
+            let cleanText = text.replace(/<ruby>([^<]+)<rt>[^<]*<\/rt><\/ruby>/g, '$1');
+            cleanText = cleanText.replace(/<ruby><ruby>([^<]+)<rt>[^<]*<\/rt><\/ruby><rt>[^<]*<\/rt><\/ruby>/g, '$1');
+            res.write(`data: ${JSON.stringify({ type: 'text_fragment', text: cleanText, is_new_paragraph: isParagraphBreak })}\n\n`);
         });
 
         console.log(`✅ Claude API streaming complete`);

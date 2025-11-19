@@ -320,52 +320,72 @@ async function makeChoice(choiceIndex) {
         let fullNarrative = '';
         let sceneMetadata = null;
         let paragraphIndex = 0;
+        let currentParagraphP = null;
 
         eventSource.addEventListener('message', (e) => {
             console.log('Received SSE:', e.data);
             const event = JSON.parse(e.data);
 
-            if (event.type === 'paragraph') {
-                // Speak paragraph immediately as it arrives
+            if (event.type === 'text_fragment' || event.type === 'paragraph') {
+                // Handle both new fragment type and legacy paragraph type
+                const text = event.text || '';
+                const isNewParagraph = event.is_new_paragraph || event.type === 'paragraph';
+                
+                // Audio: Speak immediately
                 if (audio && audio.enabled) {
-                    const textToSpeak = cleanTextForSpeech(event.text);
-                    // Queue speech (don't clear)
+                    const textToSpeak = cleanTextForSpeech(text);
                     audio.speak(textToSpeak, false);
                 }
                 
-                // Find skeleton for this paragraph
-                let skeleton = narrativeText.querySelector(`.skeleton-paragraph[data-index="${paragraphIndex}"]`);
+                // Visual:
+                if (!currentParagraphP || isNewParagraph) {
+                     // Find skeleton for this paragraph index
+                     let skeleton = narrativeText.querySelector(`.skeleton-paragraph[data-index="${paragraphIndex}"]`);
 
-                if (!skeleton) {
-                    // If skeleton doesn't exist, create it (shouldn't happen but fallback)
-                    skeleton = document.createElement('div');
-                    skeleton.className = 'skeleton-paragraph';
-                    skeleton.dataset.index = paragraphIndex;
-                    narrativeText.appendChild(skeleton);
+                     // If no skeleton exists for this index, try to create one or just append
+                     if (!skeleton) {
+                         skeleton = document.createElement('div');
+                         skeleton.className = 'skeleton-paragraph';
+                         skeleton.dataset.index = paragraphIndex;
+                         narrativeText.appendChild(skeleton);
+                     }
+                     
+                     // Create new P
+                     const p = document.createElement('p');
+                     p.style.opacity = '0';
+                     const isJapanese = currentStory.language === 'ja';
+                     p.style.animation = isJapanese
+                        ? 'inkBrushReveal 0.6s ease-out forwards'
+                        : 'typewriterReveal 0.3s ease-out forwards';
+                     
+                     skeleton.replaceWith(p);
+                     currentParagraphP = p;
+                     
+                     // Increment index for next time we need a NEW paragraph
+                     paragraphIndex++;
+                     
+                     // Add next skeleton ahead of time
+                     if (!narrativeText.querySelector(`.skeleton-paragraph[data-index="${paragraphIndex}"]`)) {
+                         const nextSkeleton = document.createElement('div');
+                         nextSkeleton.className = 'skeleton-paragraph';
+                         nextSkeleton.dataset.index = paragraphIndex;
+                         narrativeText.appendChild(nextSkeleton);
+                     }
                 }
-
-                // Replace skeleton with actual paragraph
-                const p = document.createElement('p');
-                p.innerHTML = transformNarrativeText(event.text.trim());
-                p.style.opacity = '0';
-                // Use ink-brush animation for Japanese, typewriter for English
-                const isJapanese = currentStory.language === 'ja';
-                p.style.animation = isJapanese
-                    ? 'inkBrushReveal 0.6s ease-out forwards'
-                    : 'typewriterReveal 0.3s ease-out forwards';
-
-                skeleton.replaceWith(p);
-
-                fullNarrative += event.text + '\n\n';
-                paragraphIndex++;
-
-                // Proactively create skeleton for NEXT paragraph
-                if (!narrativeText.querySelector(`.skeleton-paragraph[data-index="${paragraphIndex}"]`)) {
-                    const nextSkeleton = document.createElement('div');
-                    nextSkeleton.className = 'skeleton-paragraph';
-                    nextSkeleton.dataset.index = paragraphIndex;
-                    narrativeText.appendChild(nextSkeleton);
+                
+                // Append text to current paragraph
+                // We use a span to animate the new chunk if we wanted, but simple append is fine
+                // transformNarrativeText handles furigana etc.
+                // Note: transformNarrativeText expects full text usually for normalization, but chunks should be okay
+                const htmlContent = transformNarrativeText(text.trim());
+                if (htmlContent) {
+                    const span = document.createElement('span');
+                    span.innerHTML = htmlContent + ' '; // Add space for safety
+                    currentParagraphP.appendChild(span);
                 }
+                
+                fullNarrative += text + (isNewParagraph ? '\n\n' : ' ');
+
             } else if (event.type === 'metadata') {
                 sceneMetadata = event.data;
 

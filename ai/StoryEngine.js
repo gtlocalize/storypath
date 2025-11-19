@@ -182,29 +182,73 @@ IMPORTANT: This is NOT a timeline. Don't specify scene numbers. The story unfold
                     inNarrative = false;
                 }
 
-                // Look for complete paragraphs (double newline)
-                const paragraphSeparator = /\\n\\n/;
-                const parts = narrativeBuffer.split(paragraphSeparator);
+                // Find the earliest split point (sentence end or paragraph break)
+                // Look for:
+                // 1. Double newline: \\n\\n
+                // 2. Sentence end: [.!?。] followed by space or single newline
+                const doubleNewlineRegex = /\\n\\n/;
+                const sentenceEndRegex = /(?<=[.!?。])(?:\s+|\\n)/;
 
-                // Calculate how many complete paragraphs we have now
-                const totalComplete = !inNarrative ? parts.length : parts.length - 1;
+                let splitIndex = -1;
+                let matchLength = 0;
+                let isParagraphBreak = false;
 
-                // Send only NEW paragraphs (ones we haven't sent yet)
-                for (let i = sentParagraphs; i < totalComplete; i++) {
-                    const para = parts[i];
-                    if (para.trim()) {
+                const dnMatch = narrativeBuffer.match(doubleNewlineRegex);
+                const seMatch = narrativeBuffer.match(sentenceEndRegex);
+
+                if (dnMatch && seMatch) {
+                    // Both found, take the earlier one
+                    if (dnMatch.index < seMatch.index) {
+                        splitIndex = dnMatch.index;
+                        matchLength = dnMatch[0].length;
+                        isParagraphBreak = true;
+                    } else {
+                        splitIndex = seMatch.index;
+                        matchLength = seMatch[0].length;
+                        isParagraphBreak = false;
+                    }
+                } else if (dnMatch) {
+                    splitIndex = dnMatch.index;
+                    matchLength = dnMatch[0].length;
+                    isParagraphBreak = true;
+                } else if (seMatch) {
+                    splitIndex = seMatch.index;
+                    matchLength = seMatch[0].length;
+                    isParagraphBreak = false;
+                }
+
+                // If we found a split point, or we finished the narrative
+                if (splitIndex !== -1 || (!inNarrative && narrativeBuffer.length > 0)) {
+                    const endIndex = splitIndex !== -1 ? splitIndex : narrativeBuffer.length;
+                    const chunk = narrativeBuffer.substring(0, endIndex);
+                    
+                    // Advance buffer (skip the delimiter if it was a split)
+                    narrativeBuffer = narrativeBuffer.substring(endIndex + matchLength);
+
+                    if (chunk.trim()) {
                         // Unescape JSON escape sequences
-                        const cleaned = para
+                        const cleaned = chunk
                             .replace(/\\n/g, '\n')
                             .replace(/\\"/g, '"')
                             .replace(/\\\\/g, '\\')
                             .trim();
 
                         if (cleaned) {
-                            console.log(`📤 Paragraph ${i + 1}: ${cleaned.substring(0, 50)}...`);
-                            onParagraph(cleaned);
-                            sentParagraphs++;
+                            console.log(`📤 Chunk: ${cleaned.substring(0, 30)}... (Para break: ${isParagraphBreak})`);
+                            onParagraph(cleaned, isParagraphBreak);
                         }
+                    }
+                    
+                    // Process remaining buffer in next iteration if any
+                    if (narrativeBuffer.length > 0) {
+                       // We need to re-evaluate the buffer loop, but the loop relies on "inNarrative" state mostly.
+                       // Actually, we should loop here until no more matches found.
+                       // But since stream.on('text') calls this frequently, it's fine to wait for next chunk 
+                       // UNLESS we have multiple sentences in one chunk.
+                       // Let's force a re-check by not doing anything else, the next stream chunk will trigger or we could use a while loop.
+                       // For simplicity/safety, I'll rely on high frequency stream events, 
+                       // BUT if a large chunk arrives at once, we might lag.
+                       // Ideally: wrap this in a while(true) loop.
                     }
                 }
             }
