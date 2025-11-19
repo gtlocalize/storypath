@@ -69,8 +69,8 @@ class AudioManager {
         try {
             // Use OpenAI TTS via our backend
             // 'fable' is better for storytelling in English
-            // 'nova' is still best for Japanese
-            const voice = this.lang === 'ja' ? 'nova' : 'fable';
+            // 'onyx' or 'shimmer' are better for Japanese storytelling than 'nova'
+            const voice = this.lang === 'ja' ? 'onyx' : 'fable';
             
             const response = await fetch('/api/tts', {
                 method: 'POST',
