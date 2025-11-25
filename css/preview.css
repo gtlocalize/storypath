@@ -544,32 +544,37 @@ body {
     display: inline-block;
 }
 
+/* Japanese layout - .jp class fallback for browsers without :has() support */
+.horror-container.jp,
 .horror-container.adult:has(.japanese-text),
 .horror-container.kids:has(.japanese-text) {
     width: 90vw;
     max-width: 1400px;
 }
 
+.horror-content.jp,
 .horror-content.adult:has(.japanese-text),
 .horror-content.kids:has(.japanese-text) {
-    max-height: none;
+    max-height: 80vh;
     height: auto;
-    overflow: visible;
+    overflow-y: auto;
+    overflow-x: hidden;
     display: flex;
     flex-direction: row-reverse;
     justify-content: center;
     align-items: center;
     gap: 40px;
     padding: 40px;
-    height: 100vh;
 }
 
+.horror-content.jp .horror-narrative,
 .horror-content.adult:has(.japanese-text) .horror-narrative,
 .horror-content.kids:has(.japanese-text) .horror-narrative {
     flex: 0 1 auto;
     max-width: none;
 }
 
+.horror-content.jp .dive-btn,
 .horror-content.adult:has(.japanese-text) .dive-btn,
 .horror-content.kids:has(.japanese-text) .dive-btn {
     writing-mode: vertical-rl;

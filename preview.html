@@ -7,7 +7,7 @@
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Crimson+Text:ital,wght@0,400;0,700;1,400&family=Handlee&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Crimson+Text:ital,wght@0,400;0,700;1,400&family=Handlee&family=Noto+Serif+JP:wght@400;700&family=Noto+Sans+JP:wght@400;700&family=M+PLUS+Rounded+1c:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/main.css?v=1763464103">
     <link rel="stylesheet" href="css/preview.css?v=1763464103">
     <!-- Splitting.js for character animations -->
@@ -42,45 +42,31 @@
         function typewriterWithHTML(element, htmlContent, options = {}) {
             const speed = options.speed || 10;
             const afterStep = options.afterStep || (() => {});
-            
-            // Pre-calculate final dimensions to prevent juddering
+
+            // For Japanese vertical text, render all content invisibly first to establish dimensions
             const isJapanese = element.classList.contains('japanese-text');
             if (isJapanese) {
-                const measureDiv = document.createElement('div');
-                measureDiv.style.cssText = window.getComputedStyle(element).cssText;
-                measureDiv.style.position = 'absolute';
-                measureDiv.style.visibility = 'hidden';
-                measureDiv.style.opacity = '0';
-                measureDiv.style.pointerEvents = 'none';
-                measureDiv.innerHTML = htmlContent;
-                document.body.appendChild(measureDiv);
-                
-                // Force layout calculation
-                void measureDiv.offsetWidth;
-                
-                const finalWidth = measureDiv.offsetWidth;
-                const finalHeight = measureDiv.offsetHeight;
-                
-                // Set fixed dimensions to prevent layout shifts
-                element.style.setProperty('width', finalWidth + 'px', 'important');
-                element.style.setProperty('height', finalHeight + 'px', 'important');
-                element.style.setProperty('min-width', finalWidth + 'px', 'important');
-                element.style.setProperty('min-height', finalHeight + 'px', 'important');
-                element.style.setProperty('max-width', finalWidth + 'px', 'important');
-                element.style.setProperty('max-height', finalHeight + 'px', 'important');
+                // Render full content but make characters invisible
+                // This establishes the final box size without juddering
+                element.innerHTML = htmlContent;
+                element.style.visibility = 'hidden';
 
-                // Use logical properties for vertical writing-mode
-                element.style.setProperty('contain-intrinsic-block-size', finalWidth + 'px', 'important');
-                element.style.setProperty('contain-intrinsic-inline-size', finalHeight + 'px', 'important');
+                // Force layout calc
+                void element.offsetWidth;
 
-                element.style.willChange = 'contents';
-                element.style.contain = 'layout style size';
-                element.style.boxSizing = 'border-box';
-                element.style.transform = 'translateZ(0)'; // Force GPU acceleration
-                
-                document.body.removeChild(measureDiv);
+                // Now lock those natural dimensions
+                const naturalWidth = element.offsetWidth;
+                const naturalHeight = element.offsetHeight;
+                element.style.width = naturalWidth + 'px';
+                element.style.height = naturalHeight + 'px';
+                element.style.minWidth = naturalWidth + 'px';
+                element.style.minHeight = naturalHeight + 'px';
+
+                // Clear and make visible again for typewriter
+                element.innerHTML = '';
+                element.style.visibility = 'visible';
             }
-            
+
             // Create a temporary container to parse HTML
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = htmlContent;
@@ -211,10 +197,13 @@
                     afterStep(charCount);
                 }
                 
-                // Schedule next character
-                setTimeout(revealNext, speed);
+                // Schedule next character with random variation for horror effect
+                const randomSpeed = options.randomSpeed
+                    ? speed * (0.3 + Math.random() * 2.5) // 30% to 280% of base speed
+                    : speed;
+                setTimeout(revealNext, randomSpeed);
             }
-            
+
             revealNext();
         }
 
@@ -293,8 +282,8 @@
 
             console.log(`🎨 Rendering preview: genre=${genre}, maturity=${maturity}`);
 
-            // Narrative already has furigana parsed from server
-            const narrative = sceneData.narrative_text;
+            // Parse furigana brackets into ruby tags for display
+            const narrative = parseFurigana(sceneData.narrative_text);
 
             // Genre-specific display
             let previewHTML = '';
@@ -349,11 +338,12 @@
                 `;
             } else if (genre === 'horror') {
                 const horrorIcon = maturity === 'kids' ? '👻' : '👁️';
+                const jpClass = isJapanese ? 'jp' : '';
                 previewHTML = `
-                    <div class="preview-horror ${maturity}">
+                    <div class="preview-horror ${maturity} ${jpClass}">
                         <div id="${maturity}-horror-particles"></div>
-                        <div class="horror-container ${maturity}">
-                            <div class="horror-content ${maturity}">
+                        <div class="horror-container ${maturity} ${jpClass}">
+                            <div class="horror-content ${maturity} ${jpClass}">
                                 <div class="horror-narrative ${maturity} ${isJapanese ? 'japanese-text' : ''}" data-narrative="${narrative.replace(/"/g, '&quot;')}"></div>
                                 <button class="dive-btn horror-btn ${maturity}" onclick="startStory()">
                                     <span class="btn-text">${btnText}</span>
@@ -556,7 +546,8 @@
 
                     let charCount = 0;
                     typewriterWithHTML(narrative, htmlContent, {
-                        speed: 15, // Slightly slower for adult, more dramatic
+                        speed: 40, // Base speed for horror
+                        randomSpeed: true, // Erratic, unsettling pace
                         afterStep: (count) => {
                             charCount = count;
                             // Auto-scroll to bottom every few characters
