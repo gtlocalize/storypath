@@ -304,6 +304,44 @@ function renderBook() {
     });
 
     initPageFlip();
+    initFloatingEffect();
+}
+
+function initFloatingEffect() {
+    const bookEl = document.getElementById('book');
+    const wrapper = document.querySelector('.book-container'); // Capture mouse over entire container
+    
+    if (!bookEl || !wrapper) return;
+
+    let bounds = wrapper.getBoundingClientRect();
+    
+    // Update bounds on resize
+    window.addEventListener('resize', () => {
+        bounds = wrapper.getBoundingClientRect();
+    });
+
+    wrapper.addEventListener('mousemove', (e) => {
+        // Calculate mouse position relative to center of book
+        const mouseX = e.clientX - bounds.left - (bounds.width / 2);
+        const mouseY = e.clientY - bounds.top - (bounds.height / 2);
+        
+        // Calculate rotation angles (max +/- 10 degrees)
+        // RotateY: Mouse Left -> Tilt Left (negative X) -> Rotate Negative Y (wait, rotateY is around Y axis)
+        // Mouse X moves -> Rotate around Y axis
+        const rotateY = (mouseX / bounds.width) * 20; // Max 10 deg tilt
+        // Mouse Y moves -> Rotate around X axis (inverted: mouse down -> tilt down -> negative rotateX)
+        const rotateX = -(mouseY / bounds.height) * 20;
+
+        // Apply transform
+        // We use requestAnimationFrame for smoothness if needed, but direct update 
+        // with CSS transition: transform 0.1s is usually responsive enough
+        bookEl.style.transform = `rotateX(${10 + rotateX}deg) rotateY(${rotateY}deg)`;
+    });
+
+    // Reset on mouse leave
+    wrapper.addEventListener('mouseleave', () => {
+        bookEl.style.transform = 'rotateX(10deg) rotateY(0deg)';
+    });
 }
 
 function initPageFlip() {
