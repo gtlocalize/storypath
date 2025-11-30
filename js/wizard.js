@@ -227,7 +227,7 @@ async function createStory() {
 
     } catch (error) {
         console.error('Error creating story:', error);
-        alert('Failed to create story: ' + error.message);
+        Toast.error('Failed to create story: ' + error.message, 'Creation Failed');
         // Go back to step 5
         document.getElementById('loadingStep').classList.add('hidden');
         document.getElementById('step5').classList.remove('hidden');
@@ -264,7 +264,11 @@ async function pollStoryStatus(storyId) {
         }
     }, 100);
 
-    const pollInterval = setInterval(async () => {
+    let delay = 2000;
+    const maxDelay = 8000; // Cap at 8 seconds
+    let pollTimeout = null;
+
+    const checkStatus = async () => {
         try {
             const response = await fetch(`${API_URL}/story/${storyId}/status`);
             const data = await response.json();
@@ -286,7 +290,6 @@ async function pollStoryStatus(storyId) {
             }
 
             if (data.ready) {
-                clearInterval(pollInterval);
                 clearInterval(smoothInterval);
                 targetProgress = 100;
                 setProgress(100, 'Story ready!');
@@ -296,9 +299,8 @@ async function pollStoryStatus(storyId) {
                     window.location.href = `preview.html?story=${storyId}`;
                 }, 500);
             } else if (data.error) {
-                clearInterval(pollInterval);
                 clearInterval(smoothInterval);
-
+                
                 // Show better error message with retry option
                 const retry = confirm(
                     'Story generation failed. This is usually a temporary API issue.\n\n' +
@@ -312,11 +314,13 @@ async function pollStoryStatus(storyId) {
                     document.getElementById('loadingStep').classList.add('hidden');
                     document.getElementById('step5').classList.remove('hidden');
                 }
-                return;
+            } else {
+                // Still waiting - schedule next check with backoff
+                delay = Math.min(delay + 1000, maxDelay);
+                pollTimeout = setTimeout(checkStatus, delay);
             }
 
         } catch (error) {
-            clearInterval(pollInterval);
             clearInterval(smoothInterval);
             console.error('Error polling story status:', error);
 
@@ -332,7 +336,10 @@ async function pollStoryStatus(storyId) {
                 document.getElementById('step5').classList.remove('hidden');
             }
         }
-    }, 2000); // Poll every 2 seconds
+    };
+
+    // Start polling
+    pollTimeout = setTimeout(checkStatus, delay);
 }
 
 // Progress bar animation

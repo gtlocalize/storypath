@@ -428,6 +428,63 @@ app.get('/api/story/:id', async (req, res) => {
     }
 });
 
+// Get complete story for book reader (all scenes)
+app.get('/api/story/:id/complete', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const db = getDatabase(id);
+        await db.init();
+
+        const story = await db.getStory(id);
+
+        if (!story) {
+            db.close();
+            return res.status(404).json({ error: 'Story not found' });
+        }
+
+        // Get all scenes in order
+        const scenes = await db.all(
+            'SELECT * FROM scenes WHERE story_id = ? ORDER BY scene_number ASC',
+            [id]
+        );
+
+        // Format pages for the book reader
+        const pages = scenes.map(scene => ({
+            scene_number: scene.scene_number,
+            text: scene.narrative_text,
+            image_url: scene.image_url,
+            image_prompt: scene.image_prompt
+        }));
+
+        // Add furigana if Japanese
+        if (story.language === 'ja') {
+            for (const page of pages) {
+                page.text = await processFurigana(page.text, story.language);
+            }
+        }
+
+        db.close();
+
+        res.json({
+            story: {
+                id: story.id,
+                title: story.title,
+                genre: story.genre,
+                language: story.language,
+                maturity_level: story.maturity_level,
+                book_cover_url: story.book_cover_url,
+                ending_type: story.ending_reached,
+                is_complete: story.is_complete
+            },
+            pages
+        });
+
+    } catch (error) {
+        console.error('Error fetching complete story:', error);
+        res.status(500).json({ error: 'Failed to fetch story' });
+    }
+});
+
 // Make a choice and advance story (supports both GET with query param and POST with body for SSE)
 app.get('/api/story/:id/choice', checkLockdown('storypath'), handleChoice);
 app.post('/api/story/:id/choice', checkLockdown('storypath'), handleChoice);

@@ -104,8 +104,8 @@ function cleanTextForSpeech(text) {
 // Load story on page load
 async function loadStory() {
     if (!storyId) {
-        alert('No story ID provided');
-        window.location.href = '/';
+        Toast.error('No story ID provided', 'Error');
+        setTimeout(() => window.location.href = '/', 2000);
         return;
     }
 
@@ -157,8 +157,8 @@ async function loadStory() {
 
     } catch (error) {
         console.error('Failed to load story:', error);
-        alert('Failed to load story: ' + error.message);
-        window.location.href = '/';
+        Toast.error('Failed to load story: ' + error.message, 'Error');
+        setTimeout(() => window.location.href = '/', 3000);
     }
 }
 
@@ -427,6 +427,17 @@ async function makeChoice(choiceIndex) {
                 // Remove min-height
                 narrativeText.style.minHeight = '';
 
+                // Check if story is complete
+                if (sceneMetadata.story_complete) {
+                    // Story ended! Show ending screen instead of choices
+                    document.getElementById('choicesPanel').style.display = 'none';
+                    updateStoryView(false);
+                    setTimeout(() => {
+                        showEndingScreen(sceneMetadata.ending_type);
+                    }, 2000); // Brief delay to let final narrative sink in
+                    return;
+                }
+
                 // Show choices and update full view
                 document.getElementById('choicesPanel').style.display = 'flex';
                 // Pass false to skip speaking because we already streamed it
@@ -442,7 +453,7 @@ async function makeChoice(choiceIndex) {
         eventSource.addEventListener('error', (e) => {
             console.error('SSE error:', e);
             eventSource.close();
-            alert('Failed to process choice. Please try again.');
+            Toast.error('Failed to process choice. Please try again.', 'Connection Error');
 
             // Re-enable choices
             document.querySelectorAll('.choice-button').forEach(btn => {
@@ -452,7 +463,7 @@ async function makeChoice(choiceIndex) {
 
     } catch (error) {
         console.error('Failed to process choice:', error);
-        alert('Failed to process choice: ' + error.message);
+        Toast.error('Failed to process choice: ' + error.message, 'Error');
 
         // Re-enable choices
         document.querySelectorAll('.choice-button').forEach(btn => {
@@ -486,22 +497,35 @@ function updateStats() {
 
 function startImagePolling() {
     if (imageCheckInterval) {
-        clearInterval(imageCheckInterval);
+        clearTimeout(imageCheckInterval);
     }
 
-    imageCheckInterval = setInterval(async () => {
+    let delay = 2000;
+    const maxDelay = 10000;
+
+    const checkImage = async () => {
         try {
             const response = await fetch(`${API_URL}/story/${storyId}/image/${currentStory.current_scene_number}`);
             const data = await response.json();
 
             if (data.ready && data.url) {
                 document.getElementById('sceneImage').src = data.url;
-                clearInterval(imageCheckInterval);
+                // Success! No next call.
+            } else {
+                // Not ready, try again with backoff
+                delay = Math.min(delay + 1000, maxDelay);
+                imageCheckInterval = setTimeout(checkImage, delay);
             }
         } catch (error) {
             console.error('Image check failed:', error);
+            // Retry on error too
+            delay = Math.min(delay + 1000, maxDelay);
+            imageCheckInterval = setTimeout(checkImage, delay);
         }
-    }, 3000); // Check every 3 seconds
+    };
+
+    // Initial call
+    imageCheckInterval = setTimeout(checkImage, delay);
 }
 
 function imageLoaded() {
@@ -509,13 +533,13 @@ function imageLoaded() {
     if (!img.src.includes('placeholder')) {
         document.getElementById('imageLoadingOverlay').style.display = 'none';
         if (imageCheckInterval) {
-            clearInterval(imageCheckInterval);
+            clearTimeout(imageCheckInterval);
         }
     }
 }
 
 function showMenu() {
-    alert('Menu feature coming soon!');
+    Toast.info('Menu feature coming soon!', 'Coming Soon');
 }
 
 function showHistory() {
@@ -526,6 +550,113 @@ function goHome() {
     if (confirm('Are you sure you want to leave this story?')) {
         window.location.href = 'index.html';
     }
+}
+
+function showEndingScreen(endingType) {
+    // Create confetti canvas
+    const confettiCanvas = document.createElement('canvas');
+    confettiCanvas.id = 'confetti-canvas';
+    document.body.appendChild(confettiCanvas);
+    
+    // Start confetti animation
+    launchConfetti(confettiCanvas);
+    
+    // Determine ending emoji based on type
+    const endingEmojis = {
+        'happy': '🎉',
+        'tragic': '💔',
+        'mysterious': '🌙',
+        'heroic': '⚔️',
+        'bittersweet': '🌸',
+        'triumphant': '👑',
+        'peaceful': '🕊️',
+        'dark': '🖤',
+        'romantic': '💕',
+        'adventure': '🗺️'
+    };
+    const emoji = endingEmojis[endingType?.toLowerCase()] || '✨';
+    
+    // Create ending overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'ending-overlay';
+    overlay.innerHTML = `
+        <div class="ending-content">
+            <div class="ending-emoji">${emoji}</div>
+            <h1 class="ending-title">The End</h1>
+            <p class="ending-subtitle">${currentStory.title}</p>
+            ${endingType ? `<div class="ending-type">${endingType} Ending</div>` : ''}
+            <div class="ending-actions">
+                <button class="ending-btn btn-book" onclick="window.location.href='book.html?story=${storyId}'">
+                    📖 Read as Storybook
+                </button>
+                <button class="ending-btn btn-home" onclick="window.location.href='index.html'">
+                    🏠 Return Home
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    // Stop ambient audio, play triumphant sound
+    if (audio) {
+        audio.stopAmbient();
+    }
+}
+
+function launchConfetti(canvas) {
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+    const confetti = [];
+    const colors = ['#ffd700', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ff8c00', '#9b59b6'];
+    
+    // Create confetti particles
+    for (let i = 0; i < 150; i++) {
+        confetti.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height - canvas.height,
+            size: Math.random() * 10 + 5,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            speedY: Math.random() * 3 + 2,
+            speedX: (Math.random() - 0.5) * 2,
+            rotation: Math.random() * 360,
+            rotationSpeed: (Math.random() - 0.5) * 10
+        });
+    }
+    
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        confetti.forEach((p, i) => {
+            p.y += p.speedY;
+            p.x += p.speedX;
+            p.rotation += p.rotationSpeed;
+            
+            // Reset if off screen
+            if (p.y > canvas.height) {
+                p.y = -20;
+                p.x = Math.random() * canvas.width;
+            }
+            
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rotation * Math.PI / 180);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size / 2);
+            ctx.restore();
+        });
+        
+        requestAnimationFrame(animate);
+    }
+    
+    animate();
+    
+    // Stop confetti after 10 seconds
+    setTimeout(() => {
+        canvas.remove();
+    }, 10000);
 }
 
 function toggleAudio() {
@@ -664,6 +795,6 @@ window.addEventListener('load', () => {
 // Cleanup on page unload
 window.addEventListener('beforeunload', () => {
     if (imageCheckInterval) {
-        clearInterval(imageCheckInterval);
+        clearTimeout(imageCheckInterval);
     }
 });

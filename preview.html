@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Crimson+Text:ital,wght@0,400;0,700;1,400&family=Handlee&family=Noto+Serif+JP:wght@400;700&family=Noto+Sans+JP:wght@400;700&family=M+PLUS+Rounded+1c:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/main.css?v=1763464103">
     <link rel="stylesheet" href="css/preview.css?v=1763464103">
+    <link rel="stylesheet" href="css/toast.css?v=2">
     <!-- Splitting.js for character animations -->
     <link rel="stylesheet" href="https://unpkg.com/splitting/dist/splitting.css">
     <!-- Animation Libraries -->
@@ -22,6 +23,7 @@
 </head>
 <body>
     <div id="preview-container"></div>
+    <script src="js/toast.js?v=2"></script>
 
     <script>
         const API_URL = `${window.location.protocol}//${window.location.hostname}/storypath-api`;
@@ -209,8 +211,8 @@
 
         async function loadStoryPreview() {
             if (!storyId) {
-                alert('No story ID provided');
-                window.location.href = 'index.html';
+                Toast.error('No story ID provided', 'Error');
+                setTimeout(() => window.location.href = 'index.html', 2000);
                 return;
             }
 
@@ -234,13 +236,14 @@
 
             } catch (error) {
                 console.error('Failed to load story:', error);
-                alert('Failed to load story preview');
-                window.location.href = 'index.html';
+                Toast.error('Failed to load story preview: ' + error.message, 'Error');
+                setTimeout(() => window.location.href = 'index.html', 3000);
             }
         }
 
         async function pollForTitle() {
             console.log('📝 Checking if title is ready...');
+            
             const checkTitle = async () => {
                 try {
                     const response = await fetch(`${API_URL}/story/${storyId}`);
@@ -260,18 +263,29 @@
                 }
             };
 
-            // Check every second for up to 30 seconds
-            for (let i = 0; i < 30; i++) {
+            // Linear backoff strategy
+            let delay = 1000;
+            const maxDelay = 5000;
+            const maxAttempts = 30;
+            let attempts = 0;
+
+            while (attempts < maxAttempts) {
                 if (await checkTitle()) {
                     console.log('✅ Title ready!');
                     return;
                 }
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                await new Promise(resolve => setTimeout(resolve, delay));
+                
+                // Increase delay linearly up to cap
+                delay = Math.min(delay + 500, maxDelay);
+                attempts++;
             }
 
             // Timeout - use temp title
             titleReady = true;
             console.log('Title generation timed out, using temp title');
+            Toast.info('Using temporary title (generation taking longer than expected)', 'Info');
         }
 
         function renderPreview() {
