@@ -163,7 +163,7 @@ function init3DBookAnimations() {
                     try {
                         const response = await fetch(`${API_URL}/story/${storyId}/book-layout`);
                         const data = await response.json();
-                        const CURRENT_LAYOUT_VERSION = 4; // v4: Fixed scenes filter bug
+                        const CURRENT_LAYOUT_VERSION = 5; // v5: Server API fix
                         
                         if (data.layout && data.layout.version >= CURRENT_LAYOUT_VERSION) {
                             // Layout is current - go to book reader

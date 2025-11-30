@@ -116,7 +116,7 @@ class BookCompiler {
         onProgress(100);
         
         const layout = {
-            version: 4,  // v4: Fixed scenes filter bug
+            version: 5,  // v5: Server API fix
             storyId: storyData.id,
             title: storyData.title,
             language: storyData.language,

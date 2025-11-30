@@ -448,18 +448,27 @@ app.get('/api/story/:id/complete', async (req, res) => {
             [id]
         );
 
-        // Format pages for the book reader
-        const pages = scenes.map(scene => ({
-            scene_number: scene.scene_number,
-            text: scene.narrative_text,
-            image_url: scene.image_url,
-            image_prompt: scene.image_prompt
-        }));
+        // Build pages
+        const pages = [];
+        for (const scene of scenes) {
+            // Narrative
+            if (scene.narrative_text) {
+                pages.push({
+                    type: 'narrative',
+                    scene_number: scene.scene_number,
+                    text: scene.narrative_text,
+                    image_url: scene.image_url,
+                    image_prompt: scene.image_prompt
+                });
+            }
+        }
 
         // Add furigana if Japanese
         if (story.language === 'ja') {
             for (const page of pages) {
-                page.text = await processFurigana(page.text, story.language);
+                if (page.text) {
+                    page.text = await processFurigana(page.text, story.language);
+                }
             }
         }
 
@@ -746,72 +755,6 @@ app.get('/api/story/:id/history', async (req, res) => {
     }
 });
 
-// Get completed story as stitched narrative (for "book" view)
-app.get('/api/story/:id/complete', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const db = getDatabase(id);
-        await db.init();
-
-        const story = await db.getStory(id);
-
-        if (!story.is_complete) {
-            db.close();
-            return res.status(400).json({ error: 'Story is not complete yet' });
-        }
-
-        const scenes = await db.getAllScenes(id);
-
-        // Build stitched narrative with selected choices
-        const pages = [];
-
-        for (let i = 0; i < scenes.length; i++) {
-            const scene = scenes[i];
-            const choices = await db.getChoicesForScene(scene.id);
-            const selectedChoice = choices.find(c => c.was_selected);
-
-            // Add scene narrative
-            pages.push({
-                type: 'narrative',
-                scene_number: scene.scene_number,
-                text: scene.narrative_text,
-                image_url: scene.image_url
-            });
-
-            // Add selected choice (except for last scene)
-            if (selectedChoice && i < scenes.length - 1) {
-                // Extract emoji from choice text if present
-                const emojiMatch = selectedChoice.choice_text.match(/^([^\w\s]+)\s/);
-                const emoji = emojiMatch ? emojiMatch[1] : '→';
-
-                pages.push({
-                    type: 'choice',
-                    scene_number: scene.scene_number,
-                    text: selectedChoice.choice_text,
-                    emoji: emoji
-                });
-            }
-        }
-
-        db.close();
-
-        res.json({
-            story: {
-                id: story.id,
-                title: story.title,
-                genre: story.genre,
-                language: story.language,
-                book_cover_url: story.book_cover_url,
-                ending_type: story.ending_reached,
-                total_scenes: scenes.length
-            },
-            pages
-        });
-    } catch (error) {
-        console.error('Error fetching complete story:', error);
-        res.status(500).json({ error: 'Failed to fetch complete story' });
-    }
-});
 
 // ===== BOOK COMPILATION ENDPOINTS =====
 
