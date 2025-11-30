@@ -124,15 +124,19 @@ body::before {
 
 /* ===== The Book ===== */
 #book {
-    perspective: 2500px; /* Enhanced perspective */
+    perspective: 2500px;
+    transform-style: preserve-3d;
 }
 
 /* Container for the page flip library */
 .stf__wrapper {
+    /* Enhanced 3D Book Shadow */
     box-shadow: 
-        0 30px 60px rgba(0,0,0,0.5), /* Deep drop shadow */
-        0 10px 20px rgba(0,0,0,0.3), /* Ambient shadow */
-        inset 0 0 0 1px rgba(255, 255, 255, 0.1); /* Subtle highlight */
+        0 40px 80px rgba(0,0,0,0.6),    /* Deep table shadow */
+        0 15px 25px rgba(0,0,0,0.3),    /* Near shadow */
+        inset 5px 0 10px rgba(255, 255, 255, 0.1), /* Spine highlight */
+        inset -5px 0 10px rgba(0,0,0,0.2); /* Outer edge shadow */
+    transition: box-shadow 0.3s ease;
 }
 
 /* Base page styling */
@@ -140,29 +144,30 @@ body::before {
     background-color: var(--page-cream);
     overflow: hidden;
     position: relative;
-    /* Physical page simulation */
-    border-right: 1px solid rgba(0,0,0,0.06);
+    border-right: 1px solid rgba(139, 119, 101, 0.15); /* Darker edge */
     box-sizing: border-box;
 }
 
-/* Subtle page texture */
+/* Page Thickness / Depth Effect */
 .page::before {
     content: '';
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
     pointer-events: none;
-    opacity: 0.04;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    opacity: 0.05;
+    /* Paper grain */
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
     z-index: 1;
 }
 
-/* Inner shadow for spine depth */
-.page:nth-child(odd) {
-    box-shadow: inset 5px 0 15px -5px rgba(0,0,0,0.15);
+/* Spine Shadow (Left Page) */
+.page:nth-child(even) {
+    box-shadow: inset -15px 0 25px -10px rgba(0,0,0,0.25); /* Deep spine shadow */
 }
 
-.page:nth-child(even) {
-    box-shadow: inset -5px 0 15px -5px rgba(0,0,0,0.15);
+/* Spine Shadow (Right Page) */
+.page:nth-child(odd) {
+    box-shadow: inset 15px 0 25px -10px rgba(0,0,0,0.25); /* Deep spine shadow */
 }
 
 /* Hard cover thickness simulation */

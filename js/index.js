@@ -163,7 +163,7 @@ function init3DBookAnimations() {
                     try {
                         const response = await fetch(`${API_URL}/story/${storyId}/book-layout`);
                         const data = await response.json();
-                        const CURRENT_LAYOUT_VERSION = 6; // v6: 3D styling and centering
+                        const CURRENT_LAYOUT_VERSION = 7; // v7: Fix spread alignment
                         
                         if (data.layout && data.layout.version >= CURRENT_LAYOUT_VERSION) {
                             // Layout is current - go to book reader

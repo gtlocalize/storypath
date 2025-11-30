@@ -51,15 +51,21 @@ class BookCompiler {
         const pages = [];
         let pageNumber = 0;
         
-        // 1. Front Cover (full bleed image)
+        // 1. Front Cover (Right page)
         pages.push({ type: 'cover', side: 'front' });
         
-        // 2. Title Page
+        // 2. Inner Left (Copyright/Dedication) - This pushes Title to the Right
+        pages.push({ 
+            type: 'copyright', 
+            pageNumber: ++pageNumber 
+        });
+
+        // 3. Title Page (Right page)
         pages.push({ type: 'title', pageNumber: ++pageNumber });
         
         onProgress(5);
         
-        // 3. Process each scene as a SPREAD (text page + image page)
+        // 4. Process scenes (Text on Left, Image on Right)
         for (let sceneIndex = 0; sceneIndex < scenes.length; sceneIndex++) {
             const scene = scenes[sceneIndex];
             const narrativeText = scene.text || '';
@@ -116,7 +122,7 @@ class BookCompiler {
         onProgress(100);
         
         const layout = {
-            version: 6,  // v6: 3D styling and centering
+            version: 7,  // v7: Fix spread alignment (Text Left, Image Right)
             storyId: storyData.id,
             title: storyData.title,
             language: storyData.language,
