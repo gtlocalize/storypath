@@ -124,14 +124,15 @@ body::before {
 
 /* ===== The Book ===== */
 #book {
-    perspective: 2000px;
+    perspective: 2500px; /* Enhanced perspective */
 }
 
+/* Container for the page flip library */
 .stf__wrapper {
-    box-shadow:
-        0 25px 50px var(--shadow-deep),
-        0 10px 20px var(--shadow-soft),
-        -5px 0 15px rgba(0, 0, 0, 0.1);
+    box-shadow: 
+        0 30px 60px rgba(0,0,0,0.5), /* Deep drop shadow */
+        0 10px 20px rgba(0,0,0,0.3), /* Ambient shadow */
+        inset 0 0 0 1px rgba(255, 255, 255, 0.1); /* Subtle highlight */
 }
 
 /* Base page styling */
@@ -139,64 +140,151 @@ body::before {
     background-color: var(--page-cream);
     overflow: hidden;
     position: relative;
+    /* Physical page simulation */
+    border-right: 1px solid rgba(0,0,0,0.06);
+    box-sizing: border-box;
 }
 
 /* Subtle page texture */
 .page::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    top: 0; left: 0; right: 0; bottom: 0;
     pointer-events: none;
-    opacity: 0.02;
+    opacity: 0.04;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    z-index: 1;
 }
 
-/* Page edge shadow for depth */
-.page::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 30px;
-    pointer-events: none;
+/* Inner shadow for spine depth */
+.page:nth-child(odd) {
+    box-shadow: inset 5px 0 15px -5px rgba(0,0,0,0.15);
 }
 
-.page:nth-child(even)::after {
-    right: 0;
-    background: linear-gradient(to left, rgba(0,0,0,0.03), transparent);
+.page:nth-child(even) {
+    box-shadow: inset -5px 0 15px -5px rgba(0,0,0,0.15);
 }
 
-.page:nth-child(odd)::after {
-    left: 0;
-    background: linear-gradient(to right, rgba(0,0,0,0.05), transparent);
-}
-
-/* ===== Front Cover - Full Bleed Image ===== */
-.page.cover.front {
-    background: var(--cover-leather);
+/* Hard cover thickness simulation */
+.page.cover {
     border: none;
-    overflow: hidden;
-    padding: 0 !important;
 }
 
-.cover-image-full {
-    width: 100%;
+.page.cover.front {
+    border-radius: 0 5px 5px 0;
+    box-shadow: 
+        inset 5px 0 10px rgba(255,255,255,0.15),
+        inset -3px 0 5px rgba(0,0,0,0.2);
+}
+
+.page.cover.back {
+    border-radius: 5px 0 0 5px;
+    box-shadow: 
+        inset -5px 0 10px rgba(255,255,255,0.15),
+        inset 3px 0 5px rgba(0,0,0,0.2);
+}
+
+/* ===== Content Layout for Minimal Whitespace ===== */
+
+/* Spread Layout: Text Page */
+.page.spread-text {
+    /* No special padding here, handled by container */
+}
+
+.page.spread-text .page-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Crucial: Vertically center text */
     height: 100%;
-    object-fit: cover;
-    display: block;
+    width: 100%;
 }
 
-/* Subtle vignette on cover */
-.page.cover.front::before {
-    content: '';
+.scene-text-container {
+    padding: 40px 48px;
+    width: 100%;
+    max-width: 100%;
+}
+
+/* Typography for Reading */
+.scene-text {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    color: var(--text-primary);
+    text-align: justify;
+    text-align-last: left;
+    -webkit-hyphens: auto;
+    hyphens: auto;
+    position: relative;
+    z-index: 2;
+}
+
+/* Kids Mode */
+.book-kids .scene-text {
+    font-family: 'Quicksand', sans-serif;
+    font-weight: 500;
+    text-align: left; /* Easier for kids */
+    letter-spacing: 0.01em;
+}
+
+/* Paragraph spacing */
+.scene-text p {
+    margin: 0 0 1.25em 0;
+    text-indent: 1.5em;
+}
+
+.scene-text p:first-child {
+    text-indent: 0;
+}
+
+.book-kids .scene-text p {
+    text-indent: 0; /* No indent for kids */
+    margin-bottom: 1.4em;
+}
+
+/* Drop Caps (Adults) */
+.book-adults .scene-text p:first-child::first-letter {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 3.5em;
+    float: left;
+    line-height: 0.8;
+    margin: 0.1em 0.15em 0 0;
+    color: var(--accent-copper);
+    font-weight: 600;
+}
+
+/* ===== Decorative Flourishes ===== */
+/* Add ornamental divider for short text pages */
+.text-ornament {
+    text-align: center;
+    color: var(--accent-gold);
+    font-size: 1.5rem;
+    margin-top: 2rem;
+    opacity: 0.6;
+    display: none; /* Hidden by default */
+}
+
+/* Show ornament if text is short (can be toggled by JS logic if needed, 
+   but for now CSS :only-child or similar logic is tricky. 
+   We'll handle this in JS rendering) */
+
+/* Page Numbers */
+.page-number {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    bottom: 24px;
+    font-family: 'Cormorant Garamond', serif;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    font-weight: 600;
+    z-index: 5;
+    opacity: 0.7;
+}
+
+.page:nth-child(even) .page-number {
+    left: 32px;
+}
+
+.page:nth-child(odd) .page-number {
+    right: 32px;
+}
     pointer-events: none;
     box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.3);
     z-index: 1;

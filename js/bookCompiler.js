@@ -116,7 +116,7 @@ class BookCompiler {
         onProgress(100);
         
         const layout = {
-            version: 5,  // v5: Server API fix
+            version: 6,  // v6: 3D styling and centering
             storyId: storyData.id,
             title: storyData.title,
             language: storyData.language,

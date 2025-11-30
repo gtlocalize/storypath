@@ -182,12 +182,22 @@ function renderBook() {
                         .map(p => `<p>${p.trim()}</p>`)
                         .join('');
                     
+                    // Determine if we need ornaments (short text)
+                    const totalLength = page.paragraphs.join('').length;
+                    const isShort = totalLength < 400; // Arbitrary threshold
+                    const showOrnaments = isShort && !isKids; // Kids don't need fancy dividers
+                    
+                    const ornamentTop = showOrnaments ? '<div class="text-ornament" style="display:block; margin-bottom: 2rem;">❦</div>' : '';
+                    const ornamentBottom = showOrnaments ? '<div class="text-ornament" style="display:block; margin-top: 2rem;">❧</div>' : '';
+
                     pageEl.innerHTML = `
                         <div class="page-content">
                             <div class="scene-text-container">
+                                ${ornamentTop}
                                 <div class="scene-text" style="font-size: ${fontSize}px;" data-scene="${page.sceneIndex}">
                                     ${paragraphsHtml}
                                 </div>
+                                ${ornamentBottom}
                             </div>
                             <div class="page-number">${page.pageNumber}</div>
                         </div>
