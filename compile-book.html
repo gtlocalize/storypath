@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binding Your Book - StoryPath</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Quicksand:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-warm: #e8dfd3;
+            --text-primary: #3d3229;
+            --text-secondary: #6b5c4c;
+            --accent-gold: #c9a962;
+            --accent-copper: #b87333;
+        }
+        
+        * { box-sizing: border-box; }
+        
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Quicksand', sans-serif;
+            background: linear-gradient(180deg, #e8dfd3 0%, #d4c8b8 50%, #c9baa8 100%);
+            color: var(--text-primary);
+        }
+        
+        .container {
+            text-align: center;
+            padding: 40px;
+            max-width: 500px;
+        }
+        
+        .book-animation {
+            font-size: 5rem;
+            margin-bottom: 24px;
+            animation: bookPulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes bookPulse {
+            0%, 100% { transform: scale(1) rotate(-2deg); }
+            50% { transform: scale(1.05) rotate(2deg); }
+        }
+        
+        h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2rem;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+            color: var(--text-primary);
+        }
+        
+        .subtitle {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+        }
+        
+        .progress-container {
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto 16px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(201, 169, 98, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-gold), var(--accent-copper));
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        
+        .progress-text {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 8px;
+        }
+        
+        .status {
+            font-size: 0.85rem;
+            color: var(--accent-copper);
+            margin-top: 24px;
+            min-height: 1.2em;
+        }
+        
+        .complete-container {
+            display: none;
+        }
+        
+        .complete-container.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .complete-icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+        }
+        
+        .book-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.8rem;
+            font-weight: 600;
+            font-style: italic;
+            color: var(--accent-copper);
+            margin: 16px 0;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 14px 32px;
+            margin: 8px;
+            font-family: 'Quicksand', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-gold), var(--accent-copper));
+            color: white;
+            box-shadow: 0 4px 15px rgba(201, 169, 98, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(201, 169, 98, 0.4);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.5);
+            color: var(--text-primary);
+            border: 1px solid rgba(201, 169, 98, 0.3);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Compiling State -->
+        <div id="compilingState">
+            <div class="book-animation">📖</div>
+            <h1>Binding Your Book</h1>
+            <p class="subtitle">Creating a beautiful reading experience...</p>
+            
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <p class="progress-text"><span id="progressPercent">0</span>%</p>
+            </div>
+            
+            <p class="status" id="statusText">Preparing pages...</p>
+        </div>
+        
+        <!-- Complete State -->
+        <div class="complete-container" id="completeState">
+            <div class="complete-icon">✨📚✨</div>
+            <h1>Book Complete!</h1>
+            <p class="book-title" id="bookTitle"></p>
+            <p class="subtitle">Your story is now available as a beautiful storybook.</p>
+            
+            <div>
+                <a href="#" class="btn btn-primary" id="btnReadBook">📖 Read Your Book</a>
+            </div>
+            <div>
+                <a href="index.html" class="btn btn-secondary">🏠 Return to Library</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/toast.js"></script>
+    <script src="js/bookCompiler.js"></script>
+    <script>
+        const API_URL = `${window.location.protocol}//${window.location.hostname}/storypath-api`;
+        const urlParams = new URLSearchParams(window.location.search);
+        const storyId = urlParams.get('story');
+        
+        const statusMessages = [
+            'Preparing pages...',
+            'Measuring text...',
+            'Calculating page breaks...',
+            'Laying out images...',
+            'Binding chapters...',
+            'Adding finishing touches...',
+            'Almost ready...'
+        ];
+        
+        async function startCompilation() {
+            if (!storyId) {
+                Toast.error('No story ID provided', 'Error');
+                return;
+            }
+            
+            try {
+                // Fetch story data
+                const response = await fetch(`${API_URL}/story/${storyId}/complete`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                const storyData = data.story;
+                const scenes = data.pages.filter(p => p.type === 'narrative');
+                
+                // Update title for completion screen
+                document.getElementById('bookTitle').textContent = `"${storyData.title}"`;
+                document.getElementById('btnReadBook').href = `book.html?story=${storyId}`;
+                
+                // Create compiler and run
+                const compiler = new BookCompiler();
+                
+                const layout = await compiler.compile(storyData, scenes, (progress) => {
+                    updateProgress(progress);
+                });
+                
+                // Save the layout to server
+                await fetch(`${API_URL}/story/${storyId}/book-layout`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ layout })
+                });
+                
+                // Show completion
+                showComplete();
+                
+            } catch (error) {
+                console.error('Compilation failed:', error);
+                Toast.error('Failed to compile book: ' + error.message, 'Error');
+                document.getElementById('statusText').textContent = 'Compilation failed. Please try again.';
+            }
+        }
+        
+        function updateProgress(progress) {
+            document.getElementById('progressFill').style.width = `${progress}%`;
+            document.getElementById('progressPercent').textContent = progress;
+            
+            // Update status message
+            const msgIndex = Math.min(
+                Math.floor(progress / 15),
+                statusMessages.length - 1
+            );
+            document.getElementById('statusText').textContent = statusMessages[msgIndex];
+        }
+        
+        function showComplete() {
+            document.getElementById('compilingState').style.display = 'none';
+            document.getElementById('completeState').classList.add('show');
+        }
+        
+        // Start on load
+        window.addEventListener('load', startCompilation);
+    </script>
+</body>
+</html>
+

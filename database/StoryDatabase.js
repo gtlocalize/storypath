@@ -102,7 +102,8 @@ class StoryDatabase {
         return await this.all(`
             SELECT
                 id, title, genre, language, maturity_level, is_password_protected,
-                current_scene_number, last_played, created_at, book_cover_url
+                current_scene_number, last_played, created_at, book_cover_url,
+                is_complete, book_status, book_progress
             FROM stories
             ORDER BY last_played DESC
         `);

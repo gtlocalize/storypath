@@ -586,8 +586,8 @@ function showEndingScreen(endingType) {
             <p class="ending-subtitle">${currentStory.title}</p>
             ${endingType ? `<div class="ending-type">${endingType} Ending</div>` : ''}
             <div class="ending-actions">
-                <button class="ending-btn btn-book" onclick="window.location.href='book.html?story=${storyId}'">
-                    📖 Read as Storybook
+                <button class="ending-btn btn-book" onclick="window.location.href='compile-book.html?story=${storyId}'">
+                    📖 Create Storybook
                 </button>
                 <button class="ending-btn btn-home" onclick="window.location.href='index.html'">
                     🏠 Return Home

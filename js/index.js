@@ -37,6 +37,23 @@ function create3DBook(story) {
     // Get cover URL or use placeholder
     const coverUrl = story.book_cover_url || `/storypath/images/placeholder-${story.genre}-cover.png`;
     const hasRealCover = story.book_cover_url && !story.book_cover_url.includes('placeholder');
+    
+    // Book status
+    const isComplete = story.is_complete === 1 || story.is_complete === true;
+    const bookStatus = story.book_status || 'none';
+    const bookProgress = story.book_progress || 0;
+    const isBookReady = bookStatus === 'ready';
+    const isCompiling = bookStatus === 'compiling';
+    
+    // Status badge
+    let statusBadge = '';
+    if (isComplete && isBookReady) {
+        statusBadge = '<div class="book-status-badge ready">📚</div>';
+    } else if (isComplete && isCompiling) {
+        statusBadge = `<div class="book-status-badge compiling"><div class="compile-spinner"></div></div>`;
+    } else if (isComplete && bookStatus === 'none') {
+        statusBadge = '<div class="book-status-badge pending">✨</div>';
+    }
 
     bookDiv.innerHTML = `
         <div class="books__container">
@@ -47,12 +64,14 @@ function create3DBook(story) {
                     <div class="books__page"></div>
                     <div class="books__page"></div>
                 </div>
-                <div class="books__image ${story.is_password_protected ? 'book-locked' : ''} ${!hasRealCover ? 'book-placeholder-' + story.genre : ''}">
+                <div class="books__image ${story.is_password_protected ? 'book-locked' : ''} ${!hasRealCover ? 'book-placeholder-' + story.genre : ''} ${isCompiling ? 'book-compiling' : ''}">
                     ${hasRealCover ? `<img src="${coverUrl}" alt="${story.title}" onerror="this.style.display='none'; this.parentElement.classList.add('book-placeholder-${story.genre}');">` : ''}
                     <div class="books__effect"></div>
                     <div class="books__light"></div>
+                    ${statusBadge}
+                    ${isCompiling ? `<div class="compile-overlay"><div class="compile-progress" style="width: ${bookProgress}%"></div></div>` : ''}
                 </div>
-                <div class="books__hitbox" data-book-id="${story.id}"></div>
+                <div class="books__hitbox" data-book-id="${story.id}" data-complete="${isComplete}" data-book-ready="${isBookReady}"></div>
             </div>
         </div>
         <div class="books__title">
@@ -126,6 +145,9 @@ function init3DBookAnimations() {
         // Click event
         hitbox.addEventListener("click", () => {
             const storyId = hitbox.getAttribute('data-book-id');
+            const isComplete = hitbox.getAttribute('data-complete') === 'true';
+            const isBookReady = hitbox.getAttribute('data-book-ready') === 'true';
+            
             if (storyId) {
                 const story = { id: storyId, is_password_protected: book.querySelector('.book-locked') !== null };
                 if (story.is_password_protected) {
@@ -136,7 +158,14 @@ function init3DBookAnimations() {
                             const fullStory = data.stories.find(s => s.id === storyId);
                             if (fullStory) showPasswordModal(fullStory);
                         });
+                } else if (isComplete && isBookReady) {
+                    // Story complete and book ready - go to book reader
+                    window.location.href = `book.html?story=${storyId}`;
+                } else if (isComplete) {
+                    // Story complete but book not ready - go to compile page
+                    window.location.href = `compile-book.html?story=${storyId}`;
                 } else {
+                    // Story in progress - continue playing
                     loadStory(storyId);
                 }
             }

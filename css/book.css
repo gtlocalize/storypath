@@ -279,11 +279,6 @@ body::before {
     height: 45%;
 }
 
-.scene-image-container.position-middle {
-    height: 40%;
-    margin: auto 0;
-}
-
 .scene-image-container.position-bottom {
     height: 45%;
     order: 2;
@@ -329,21 +324,21 @@ body::before {
 }
 
 .scene-text {
-    font-family: 'Quicksand', 'Cormorant Garamond', Georgia, serif;
-    font-size: 1.1rem;
-    font-weight: 500;
-    line-height: 1.85;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 1.05rem;
+    font-weight: 400;
+    line-height: 1.75;
     color: var(--text-primary);
-    column-count: 1;
-    column-gap: 30px;
-    text-align: left;
+    text-align: justify;
+    text-align-last: left;
     letter-spacing: 0.01em;
-    text-shadow: 0 0 1px rgba(61, 50, 41, 0.1);
+    hyphens: auto;
+    -webkit-hyphens: auto;
 }
 
 .scene-text p {
-    margin: 0 0 1em 0;
-    text-indent: 1.2em;
+    margin: 0 0 0.85em 0;
+    text-indent: 1.5em;
 }
 
 .scene-text p:first-child {
@@ -374,13 +369,22 @@ body::before {
 
 /* Text-only pages (continuation) */
 .page-text-only .scene-text-container {
-    padding: 28px 32px;
+    padding: 32px 36px;
     justify-content: flex-start;
 }
 
 .page-text-only .scene-text {
-    font-size: 1.15rem;
-    line-height: 1.9;
+    font-size: 1.05rem;
+    line-height: 1.75;
+}
+
+/* Continuation pages don't get drop caps */
+.page-text-only.continuation .scene-text p:first-child::first-letter {
+    font-size: inherit;
+    float: none;
+    margin: 0;
+    color: inherit;
+    font-weight: inherit;
 }
 
 /* Page numbers */
@@ -538,6 +542,29 @@ body::before {
     50% { transform: scale(1.1); opacity: 1; }
 }
 
+/* Compilation Progress */
+.compile-progress {
+    width: 200px;
+    height: 6px;
+    background: rgba(201, 169, 98, 0.2);
+    border-radius: 3px;
+    margin: 16px 0 8px 0;
+    overflow: hidden;
+}
+
+.compile-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-gold), var(--accent-copper));
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.compile-percent {
+    font-size: 0.85rem;
+    color: var(--accent-gold);
+    margin: 0;
+}
+
 /* ===== Japanese Vertical Text Support ===== */
 .ja-vertical .scene-text {
     writing-mode: vertical-rl;
@@ -645,10 +672,15 @@ body.dark-theme .page {
 
     .scene-text {
         font-size: 0.95rem;
+        line-height: 1.65;
     }
 
     .page-number {
         font-size: 0.65rem;
         bottom: 10px;
+    }
+    
+    .scene-text-container {
+        padding: 16px 20px;
     }
 }

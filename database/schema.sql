@@ -21,7 +21,12 @@ CREATE TABLE IF NOT EXISTS stories (
     last_played DATETIME DEFAULT CURRENT_TIMESTAMP,
     is_complete BOOLEAN DEFAULT 0,
     ending_reached TEXT,
-    current_scene_number INTEGER DEFAULT 0
+    current_scene_number INTEGER DEFAULT 0,
+    -- Book compilation fields
+    book_status TEXT DEFAULT 'none',  -- none, compiling, ready, error
+    book_progress INTEGER DEFAULT 0,  -- 0-100 percentage
+    book_layout TEXT,  -- JSON with pre-computed page breaks and layout
+    book_compiled_at DATETIME
 );
 
 -- Current story state (one per story)

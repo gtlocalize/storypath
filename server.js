@@ -813,6 +813,148 @@ app.get('/api/story/:id/complete', async (req, res) => {
     }
 });
 
+// ===== BOOK COMPILATION ENDPOINTS =====
+
+// Get book compilation status
+app.get('/api/story/:id/book-status', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const db = getDatabase(id);
+        await db.init();
+
+        // Add columns if they don't exist (migration)
+        await db.run('ALTER TABLE stories ADD COLUMN book_status TEXT DEFAULT "none"').catch(() => {});
+        await db.run('ALTER TABLE stories ADD COLUMN book_progress INTEGER DEFAULT 0').catch(() => {});
+        await db.run('ALTER TABLE stories ADD COLUMN book_layout TEXT').catch(() => {});
+        await db.run('ALTER TABLE stories ADD COLUMN book_compiled_at DATETIME').catch(() => {});
+
+        const story = await db.get(
+            'SELECT book_status, book_progress FROM stories WHERE id = ?', 
+            [id]
+        );
+        db.close();
+
+        if (!story) {
+            return res.status(404).json({ error: 'Story not found' });
+        }
+
+        res.json({
+            status: story.book_status || 'none',
+            progress: story.book_progress || 0
+        });
+    } catch (error) {
+        console.error('Error getting book status:', error);
+        res.status(500).json({ error: 'Failed to get book status' });
+    }
+});
+
+// Get pre-compiled book layout
+app.get('/api/story/:id/book-layout', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const db = getDatabase(id);
+        await db.init();
+
+        const story = await db.get(
+            'SELECT book_status, book_layout, title, language, genre, book_cover_url, ending_reached FROM stories WHERE id = ?',
+            [id]
+        );
+        db.close();
+
+        if (!story) {
+            return res.status(404).json({ error: 'Story not found' });
+        }
+
+        if (story.book_status !== 'ready' || !story.book_layout) {
+            return res.status(400).json({ error: 'Book not compiled yet' });
+        }
+
+        res.json({
+            layout: JSON.parse(story.book_layout)
+        });
+    } catch (error) {
+        console.error('Error getting book layout:', error);
+        res.status(500).json({ error: 'Failed to get book layout' });
+    }
+});
+
+// Trigger book compilation (client-side compilation, stores result)
+app.post('/api/story/:id/compile-book', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const db = getDatabase(id);
+        await db.init();
+
+        // Mark as compiling
+        await db.run('ALTER TABLE stories ADD COLUMN book_status TEXT DEFAULT "none"').catch(() => {});
+        await db.run('ALTER TABLE stories ADD COLUMN book_progress INTEGER DEFAULT 0').catch(() => {});
+        await db.run('ALTER TABLE stories ADD COLUMN book_layout TEXT').catch(() => {});
+        await db.run('ALTER TABLE stories ADD COLUMN book_compiled_at DATETIME').catch(() => {});
+        
+        await db.run(
+            'UPDATE stories SET book_status = ?, book_progress = ? WHERE id = ?',
+            ['compiling', 0, id]
+        );
+
+        db.close();
+        res.json({ success: true, message: 'Compilation started' });
+
+    } catch (error) {
+        console.error('Error starting compilation:', error);
+        res.status(500).json({ error: 'Failed to start compilation' });
+    }
+});
+
+// Save compiled book layout (called by client after compilation)
+app.post('/api/story/:id/book-layout', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { layout } = req.body;
+
+        if (!layout) {
+            return res.status(400).json({ error: 'Layout is required' });
+        }
+
+        const db = getDatabase(id);
+        await db.init();
+
+        await db.run(
+            'UPDATE stories SET book_status = ?, book_progress = ?, book_layout = ?, book_compiled_at = CURRENT_TIMESTAMP WHERE id = ?',
+            ['ready', 100, JSON.stringify(layout), id]
+        );
+
+        db.close();
+        res.json({ success: true });
+
+    } catch (error) {
+        console.error('Error saving book layout:', error);
+        res.status(500).json({ error: 'Failed to save book layout' });
+    }
+});
+
+// Update compilation progress
+app.post('/api/story/:id/book-progress', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { progress } = req.body;
+
+        const db = getDatabase(id);
+        await db.init();
+
+        await db.run(
+            'UPDATE stories SET book_progress = ? WHERE id = ?',
+            [progress, id]
+        );
+
+        db.close();
+        res.json({ success: true });
+
+    } catch (error) {
+        console.error('Error updating progress:', error);
+        res.status(500).json({ error: 'Failed to update progress' });
+    }
+});
+
 // Generate TTS audio
 app.post('/api/tts', async (req, res) => {
     try {
