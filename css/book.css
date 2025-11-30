@@ -336,6 +336,16 @@ body::before {
     -webkit-hyphens: auto;
 }
 
+/* Kids mode: Larger, friendlier text */
+.book-kids .scene-text {
+    font-family: 'Quicksand', 'Cormorant Garamond', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 500;
+    line-height: 1.9;
+    text-align: left;
+    letter-spacing: 0.02em;
+}
+
 .scene-text p {
     margin: 0 0 0.85em 0;
     text-indent: 1.5em;
@@ -343,6 +353,11 @@ body::before {
 
 .scene-text p:first-child {
     text-indent: 0;
+}
+
+.book-kids .scene-text p {
+    margin: 0 0 1.1em 0;
+    text-indent: 0; /* No indent for kids - cleaner */
 }
 
 /* Drop cap for first letter of scene (not continuations) */
@@ -367,15 +382,20 @@ body::before {
     text-shadow: none;
 }
 
-/* Text-only pages (continuation) */
+/* Text-only pages (full page of text, no image) */
 .page-text-only .scene-text-container {
     padding: 32px 36px;
-    justify-content: flex-start;
+    justify-content: center; /* Center text vertically */
 }
 
 .page-text-only .scene-text {
-    font-size: 1.05rem;
-    line-height: 1.75;
+    font-size: 1.1rem;
+    line-height: 1.8;
+}
+
+.book-kids .page-text-only .scene-text {
+    font-size: 1.35rem;
+    line-height: 2;
 }
 
 /* Continuation pages don't get drop caps */
@@ -385,6 +405,80 @@ body::before {
     margin: 0;
     color: inherit;
     font-weight: inherit;
+}
+
+/* ===== Picture Book Spread Layout ===== */
+/* In picture book mode, we use spreads: text on left, image on right */
+
+.page.spread-text {
+    /* Left page of spread - text only, fills the page */
+}
+
+.page.spread-text .scene-text-container {
+    padding: 40px;
+    justify-content: center;
+    height: 100%;
+}
+
+.page.spread-text .scene-text {
+    font-size: 1.15rem;
+    line-height: 1.85;
+}
+
+.book-kids .page.spread-text .scene-text {
+    font-size: 1.4rem;
+    line-height: 2.1;
+    font-weight: 500;
+}
+
+.page.spread-image {
+    /* Right page of spread - full bleed image */
+    padding: 0 !important;
+}
+
+.page.spread-image .full-page-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Soft vignette on spread images */
+.page.spread-image::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.1);
+    pointer-events: none;
+}
+
+/* Ornament/divider page (when no image) */
+.page.ornament-page {
+    background: linear-gradient(180deg, var(--page-cream) 0%, var(--page-aged) 100%);
+}
+
+.ornament-content {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ornament-symbol {
+    font-size: 4rem;
+    color: var(--accent-gold);
+    opacity: 0.6;
+}
+
+/* Page number positioning for spread pages */
+.page.spread-image .page-number {
+    position: absolute;
+    bottom: 16px;
+    right: 24px;
+    color: rgba(255, 255, 255, 0.7);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 /* Page numbers */

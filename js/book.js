@@ -147,6 +147,11 @@ function renderBook() {
     bookEl.innerHTML = '';
     
     const isJapanese = bookLayout.language === 'ja';
+    const isKids = bookLayout.maturityLevel === 'kids';
+    
+    // Add maturity class to body for CSS styling
+    document.body.classList.toggle('book-kids', isKids);
+    document.body.classList.toggle('book-adults', !isKids);
 
     // Render each page from the pre-compiled layout
     bookLayout.pages.forEach((page, idx) => {
@@ -174,39 +179,79 @@ function renderBook() {
                 break;
                 
             case 'content':
-                const isContinuation = page.isContinuation;
-                pageEl.className = `page ${isJapanese ? 'ja-vertical' : ''} ${!page.hasImage ? 'page-text-only' : ''} ${isContinuation ? 'continuation' : ''}`;
-                
-                const paragraphsHtml = page.paragraphs
-                    .map(p => `<p>${p.trim()}</p>`)
-                    .join('');
-                
-                if (page.hasImage) {
-                    pageEl.innerHTML = `
-                        <div class="page-content">
-                            <div class="scene-image-container position-${page.imagePosition}">
-                                <img src="${page.imageUrl}" alt="Scene illustration" loading="lazy">
-                            </div>
-                            <div class="scene-text-container with-image-${page.imagePosition}">
-                                <div class="scene-text" data-scene="${page.sceneIndex}">
-                                    ${paragraphsHtml}
-                                </div>
-                            </div>
-                            <div class="page-number">${page.pageNumber}</div>
-                        </div>
-                    `;
-                } else {
+                if (page.layout === 'spread-text') {
+                    // Text page of a spread
+                    pageEl.className = `page spread-text ${isJapanese ? 'ja-vertical' : ''}`;
+                    
+                    const fontSize = page.fontSize || (isKids ? 20 : 17);
+                    const paragraphsHtml = page.paragraphs
+                        .map(p => `<p>${p.trim()}</p>`)
+                        .join('');
+                    
                     pageEl.innerHTML = `
                         <div class="page-content">
                             <div class="scene-text-container">
-                                <div class="scene-text ${isContinuation ? 'continuation' : ''}" data-scene="${page.sceneIndex}">
+                                <div class="scene-text" style="font-size: ${fontSize}px;" data-scene="${page.sceneIndex}">
                                     ${paragraphsHtml}
                                 </div>
                             </div>
                             <div class="page-number">${page.pageNumber}</div>
                         </div>
                     `;
+                } else if (page.layout === 'spread-image') {
+                    // Image page of a spread (full bleed)
+                    pageEl.className = 'page spread-image';
+                    pageEl.innerHTML = `
+                        <img class="full-page-image" src="${page.imageUrl}" alt="Scene illustration" loading="lazy">
+                        <div class="page-number">${page.pageNumber}</div>
+                    `;
+                } else {
+                    // Legacy format support
+                    const isContinuation = page.isContinuation;
+                    pageEl.className = `page ${isJapanese ? 'ja-vertical' : ''} ${!page.hasImage ? 'page-text-only' : ''} ${isContinuation ? 'continuation' : ''}`;
+                    
+                    const paragraphsHtml = page.paragraphs
+                        .map(p => `<p>${p.trim()}</p>`)
+                        .join('');
+                    
+                    if (page.hasImage) {
+                        pageEl.innerHTML = `
+                            <div class="page-content">
+                                <div class="scene-image-container position-${page.imagePosition}">
+                                    <img src="${page.imageUrl}" alt="Scene illustration" loading="lazy">
+                                </div>
+                                <div class="scene-text-container with-image-${page.imagePosition}">
+                                    <div class="scene-text" data-scene="${page.sceneIndex}">
+                                        ${paragraphsHtml}
+                                    </div>
+                                </div>
+                                <div class="page-number">${page.pageNumber}</div>
+                            </div>
+                        `;
+                    } else {
+                        pageEl.innerHTML = `
+                            <div class="page-content">
+                                <div class="scene-text-container">
+                                    <div class="scene-text ${isContinuation ? 'continuation' : ''}" data-scene="${page.sceneIndex}">
+                                        ${paragraphsHtml}
+                                    </div>
+                                </div>
+                                <div class="page-number">${page.pageNumber}</div>
+                            </div>
+                        `;
+                    }
                 }
+                break;
+                
+            case 'ornament':
+                // Decorative page when no image available
+                pageEl.className = 'page ornament-page';
+                pageEl.innerHTML = `
+                    <div class="ornament-content">
+                        <div class="ornament-symbol">❧</div>
+                    </div>
+                    <div class="page-number">${page.pageNumber}</div>
+                `;
                 break;
                 
             case 'back':
@@ -288,7 +333,8 @@ function playPageAudio(pageIndex) {
     // Find the page in layout and get its text
     const page = bookLayout.pages[pageIndex];
     if (page && page.type === 'content' && page.paragraphs) {
-        const text = page.paragraphs.join(' ');
+        // Join all paragraphs on this page for reading
+        const text = page.paragraphs.join('\n\n');
         if (text) {
             audio.speak(text, true);
         }
