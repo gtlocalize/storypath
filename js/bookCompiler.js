@@ -122,7 +122,7 @@ class BookCompiler {
         onProgress(100);
         
         const layout = {
-            version: 7,  // v7: Fix spread alignment (Text Left, Image Right)
+            version: 8,  // v8: Remove tilt, fix pagination
             storyId: storyData.id,
             title: storyData.title,
             language: storyData.language,

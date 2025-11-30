@@ -122,44 +122,20 @@ body::before {
     letter-spacing: 0.5px;
 }
 
-/* ===== The Book Container (3D Stage) ===== */
+/* ===== The Book Container ===== */
 #book {
     perspective: 2500px;
     transform-style: preserve-3d;
-    transition: transform 0.1s ease-out; /* Fast response for mouse movement */
-    /* Initial float state */
-    transform: rotateX(10deg) rotateY(0deg);
+    /* Static, clean presentation */
 }
 
 /* The Book Itself */
 .stf__wrapper {
-    transform-style: preserve-3d;
-    /* Realistic Book Shadow that moves with it */
+    /* Solid, grounded shadow */
     box-shadow: 
-        0 40px 60px rgba(0,0,0,0.4),    /* Deep floor shadow */
-        0 10px 20px rgba(0,0,0,0.2),    /* Ambient occlusion */
-        inset 5px 0 10px rgba(255, 255, 255, 0.1), /* Spine highlight */
-        inset -5px 0 10px rgba(0,0,0,0.2); /* Edge shadow */
-    
-    /* Idle Floating Animation */
-    animation: floatIdle 6s ease-in-out infinite;
-}
-
-/* Breathing/Floating Animation */
-@keyframes floatIdle {
-    0%, 100% {
-        transform: translateY(0) rotateX(0deg);
-        box-shadow: 0 40px 60px rgba(0,0,0,0.4);
-    }
-    50% {
-        transform: translateY(-15px) rotateX(2deg); /* Float up */
-        box-shadow: 0 60px 80px rgba(0,0,0,0.3); /* Shadow gets lighter/further */
-    }
-}
-
-/* Hover state stops animation so mouse control takes over */
-.stf__wrapper:hover {
-    animation-play-state: paused;
+        0 20px 40px rgba(0,0,0,0.3),
+        0 10px 20px rgba(0,0,0,0.2),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 /* Base page styling */
